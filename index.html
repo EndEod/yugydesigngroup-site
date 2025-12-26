@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>뚱뚜루의 도면소생술</title>
+
+  <!-- 2D/입면 캡처용 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f2f2f2;
+      --panel:#ffffff;
+      --ink:#222;
+      --muted:#666;
+      --line:#e7e7e7;
+      --btn:#1f2937;
+      --btn2:#2563eb;
+      --danger:#dc2626;
+      --ok:#16a34a;
+      --radius:14px;
+    }
+    body{ margin:0; overflow:hidden; font-family:"Segoe UI","Malgun Gothic",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    button{ font:inherit; cursor:pointer; }
+    a{ color:inherit; }
+
+    #ui{
+      position:fixed; left:12px; top:12px; z-index:1000;
+      width:360px; max-height:92vh; overflow:auto;
+      background:rgba(255,255,255,.97);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 10px 30px rgba(0,0,0,.12);
+      padding:12px;
+    }
+    #ui::-webkit-scrollbar{ width:6px; }
+    #ui::-webkit-scrollbar-thumb{ background:#cfcfcf; border-radius:10px; }
+
+    .topRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .title{ font-weight:800; font-size:16px; display:flex; align-items:center; gap:8px; }
+    .ver{ font-size:11px; padding:2px 6px; border-radius:6px; background:#111827; color:#fff; }
+
+    .topBtns{ display:flex; gap:6px; }
+    .miniBtn{
+      border:1px solid var(--line); background:#fff; color:var(--ink);
+      padding:7px 9px; border-radius:10px; font-size:12px;
+    }
+    .miniBtn:hover{ background:#f6f6f6; }
+    .miniBtn.danger{ border-color:#ffd1d1; color:var(--danger); }
+    .miniBtn.primary{ border-color:#c7ddff; color:#1d4ed8; }
+
+    .modeRow{ margin-top:10px; display:flex; gap:8px; }
+    .modeBtn{
+      flex:1; border:none; border-radius:12px; padding:10px 0;
+      background:#e9e9e9; color:#666; font-weight:900;
+    }
+    .modeBtn.active{ background:var(--btn); color:#fff; }
+
+    .block{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
+    .hint{ font-size:12px; color:var(--muted); line-height:1.5; }
+
+    input[type=number]{
+      width:100%;
+      box-sizing:border-box;
+      padding:10px;
+      border:1px solid #d8d8d8;
+      border-radius:12px;
+      font-size:12px;
+      outline:none;
+    }
+    input[type=number]:focus{ border-color:#a7c7ff; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+
+    textarea{
+      width:100%; height:160px; box-sizing:border-box;
+      margin-top:8px;
+      border:1px solid #d8d8d8; border-radius:12px;
+      padding:10px; font-size:12px; resize:vertical;
+      user-select:text;
+    }
+    .rowBtns{ display:flex; gap:8px; margin-top:8px; }
+    .rowBtns button{ flex:1; }
+
+    #buildBtn{
+      width:100%; margin-top:10px;
+      border:none; border-radius:12px;
+      padding:12px 0; font-weight:900; font-size:14px;
+      background:var(--btn2); color:#fff;
+    }
+    #buildBtn:hover{ filter:brightness(0.95); }
+
+    #status{
+      margin-top:10px; font-size:12px; line-height:1.45;
+      color:var(--muted);
+      background:#f8fafc; border:1px solid #eef2ff;
+      padding:10px; border-radius:12px;
+    }
+    #status b{ color:var(--ink); }
+    .ok{ color:var(--ok); font-weight:900; }
+    .bad{ color:var(--danger); font-weight:900; }
+
+    details{ margin-top:10px; }
+    summary{
+      cursor:pointer; font-weight:900; font-size:13px;
+      list-style:none;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    .detailsBody{
+      margin-top:8px; font-size:12px; color:var(--muted); line-height:1.6;
+      border:1px dashed #e5e7eb; border-radius:12px; padding:10px; background:#fafafa;
+    }
+    kbd{ background:#fff; border:1px solid #ddd; padding:1px 6px; border-radius:6px; font-family:monospace; font-weight:900; }
+
+    /* Viewer */
+    #viewer{ position:fixed; inset:0; z-index:1; }
+
+    #twod{ position:absolute; inset:0; overflow:auto; display:none; background:#fff;
+      background-image: linear-gradient(#eee 1px, transparent 1px), linear-gradient(90deg, #eee 1px, transparent 1px);
+      background-size:40px 40px;
+    }
+    #three{ position:absolute; inset:0; display:block; }
+    #elev{ position:absolute; inset:0; overflow:auto; display:none; background:#fff;
+      background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
+      background-size:40px 40px;
+      padding:18px 18px 80px 18px;
+      box-sizing:border-box;
+    }
+
+    .room2d{
+      position:absolute; border:2px solid #666; box-shadow:2px 2px 6px rgba(0,0,0,.12);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-size:12px; padding:6px; cursor:grab; user-select:none; touch-action:none;
+    }
+    .room2d.dragging{ cursor:grabbing; opacity:.85; z-index:999; box-shadow:6px 6px 16px rgba(0,0,0,.18); }
+
+    /* 입면 카드 */
+    .elevHeader{
+      position:sticky; top:0; z-index:5;
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+      backdrop-filter: blur(6px);
+      margin-bottom:14px;
+    }
+    .elevGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap:14px;
+    }
+    .elevCard{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:0 10px 22px rgba(0,0,0,.07);
+    }
+    .elevTitle{ font-weight:900; font-size:14px; margin-bottom:8px; }
+    .elevMeta{ font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
+    .wallRow{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .wallBox{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:10px;
+      background:#fafafa;
+    }
+    .wallLabel{ font-weight:900; font-size:12px; margin-bottom:6px; color:#111; }
+    .wallSvgWrap{ width:100%; overflow:hidden; }
+    .warn{ margin-top:8px; font-size:12px; color:var(--danger); font-weight:900; }
+    .good{ margin-top:8px; font-size:12px; color:var(--ok); font-weight:900; }
+
+    /* Tooltip (3D) */
+    #tooltip{
+      position:fixed; display:none; z-index:9999; pointer-events:none;
+      background:rgba(17,24,39,.95); color:#fff;
+      padding:10px 12px; border-radius:12px;
+      font-size:12px; line-height:1.55;
+      box-shadow:0 18px 50px rgba(0,0,0,.35);
+      min-width:220px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    #tooltip b{ display:block; font-size:13px; margin-bottom:6px; color:#fde68a; }
+    .ttRow{ display:flex; justify-content:space-between; gap:12px; }
+    .ttLbl{ color:#cbd5e1; }
+    .ttVal{ font-weight:900; }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <div id="tooltip"></div>
+
+  <div id="ui">
+    <div class="topRow">
+      <div class="title">뚱뚜루의 도면소생술 <span class="ver">v2.32</span></div>
+      <div class="topBtns">
+        <button id="resetBtn" class="miniBtn danger">초기화</button>
+        <button id="jsonLoadBtn" class="miniBtn">JSON 불러오기</button>
+        <button id="jsonSaveBtn" class="miniBtn primary">JSON 저장</button>
+        <input id="jsonFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <div class="modeRow">
+      <button id="mode2d" class="modeBtn">📊 2D</button>
+      <button id="mode3d" class="modeBtn active">🧊 3D</button>
+      <button id="modeElev" class="modeBtn">🧱 입면</button>
+    </div>
+
+    <div class="block">
+      <div class="hint">
+        <b>딱 2단계만 하세요.</b><br/>
+        1) 아래 칸에 “방 목록” 붙여넣기<br/>
+        2) <b>[도면 생성]</b> 누르기
+      </div>
+
+      <!-- 벽두께 입력 (기본 200mm) -->
+      <div style="margin-top:10px;">
+        <div style="font-size:12px;font-weight:900;color:#111;">벽두께(mm) <span style="font-weight:700;color:#666;">(기본 200, 비워도 자동 200)</span></div>
+        <input id="wallThk" type="number" value="200" min="50" max="500" step="10" />
+        <div class="hint" style="margin-top:6px;">
+          · 200처럼 큰 값은 <b>mm</b>로 보고 0.2m로 변환합니다.<br/>
+          · 0.2처럼 작은 값은 <b>m</b>로 봅니다.
+        </div>
+      </div>
+
+      <textarea id="dataInput" placeholder="예시(탭/쉼표/공백 다 됨)
+1	거실	5.0	4.0	2.3	(선택)창면적=3.2
+2	침실	3.5	3.0	2.3
+※ 엑셀/구글시트는 표 통째로 복사해서 붙여넣어도 됩니다."></textarea>
+
+      <div class="rowBtns">
+        <button id="pasteBtn" class="miniBtn">📋 클립보드 불러오기</button>
+        <button id="sampleBtn" class="miniBtn">🧪 샘플 넣기</button>
+        <button id="clearInputBtn" class="miniBtn">🧽 입력 지우기</button>
+      </div>
+
+      <button id="buildBtn">🏗️ 도면 생성</button>
+
+      <div id="status">
+        <b>상태</b><br/>
+        아직 데이터가 없습니다. 위 칸에 붙여넣고 [도면 생성]을 눌러주세요.
+      </div>
+
+      <details>
+        <summary>사용법 (30초)</summary>
+        <div class="detailsBody">
+          1) 엑셀/구글시트에서 <b>방 목록 표</b>를 드래그해서 복사<br/>
+          2) 이 페이지에 붙여넣기<br/>
+          3) <b>[도면 생성]</b><br/><br/>
+          - 2D: 방 조각을 드래그로 맞추기<br/>
+          - 3D: <kbd>Shift</kbd> 누르고 드래그하면 방 이동<br/>
+          - 입면: 자동 전개도(4면) 보기<br/><br/>
+          <span class="bad">새로고침(F5)은 브라우저가 입력을 복원할 수 있어요.</span><br/>
+          항상 <b>[초기화]</b>로 리셋하는 게 제일 깔끔합니다.
+        </div>
+      </details>
+
+      <details>
+        <summary>면적/보정 설명 (중요)</summary>
+        <div class="detailsBody">
+          ✅ <b>순면적(엑셀 동일)</b> = 가로×세로<br/>
+          ⚠️ <b>벽 포함 추정면적(참고)</b> = (가로+2t)×(세로+2t)<br/><br/>
+          단, 방끼리 붙어 있으면 공유벽이 생기므로<br/>
+          “벽 포함 추정면적”은 <b>방별 최대치</b> 느낌으로 보세요(중복 가능).<br/><br/>
+          그래서 이 사이트는 <b>엑셀과 같은 순면적</b>을 기본값으로 유지하고,<br/>
+          벽두께는 <b>3D 벽 두께/벽체부피 추정</b>에 특히 유용하게 쓰입니다.
+        </div>
+      </details>
+
+      <details>
+        <summary>데이터 형식 (중요)</summary>
+        <div class="detailsBody">
+          최소 4개만 있으면 됩니다: <b>ID / 방이름 / 가로 / 세로</b><br/>
+          높이는 없으면 자동으로 <b>2.3m</b>를 씁니다.<br/><br/>
+          ✅ 단위 자동 추정<br/>
+          - 5.0 → 5m<br/>
+          - 5000 → 5000mm → 5m로 변환<br/><br/>
+          (선택) 창문은 초보용으로 <b>총 창면적(㎡)</b>만 넣어도 됩니다.<br/>
+          입면에서는 총 창면적을 <b>4면에 벽면적 비율로 자동 분배</b>해서 보여줘요.
+        </div>
+      </details>
+
+      <details>
+        <summary>단축키</summary>
+        <div class="detailsBody">
+          <b>공통</b>: <kbd>P</kbd> 캡처 저장 📸<br/>
+          <b>3D</b>: <kbd>Shift</kbd>+드래그 방 이동 / <kbd>L</kbd> 라벨 토글 / <kbd>G</kbd> 정답유령 토글
+        </div>
+      </details>
+
+      <details>
+        <summary>다운로드/상담</summary>
+        <div class="detailsBody">
+          📂 엑셀키트: <a href="https://drive.google.com/file/d/112Y3BEiE_1ooNrF5tPZd6SnDRHyXcrDg/view?usp=sharing" target="_blank">다운</a><br/>
+          📑 구글시트 사본: <a href="https://docs.google.com/spreadsheets/d/1GW5nJHgax0XTXOPyyVusVr_WKob3S5URJG1lSiAM6bE/copy" target="_blank">사본 만들기</a><br/>
+          💬 톡톡: <a href="https://talk.naver.com/W4HB1I" target="_blank">상담하기</a><br/>
+          🌿 그린리모델링: <a href="https://yugy.store" target="_blank">yugy.store</a>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div id="viewer">
+    <div id="twod"></div>
+    <div id="three"></div>
+    <div id="elev"></div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // -----------------------------
+    // 0) 상태/팔레트
+    // -----------------------------
+    const EXCEL_COLORS = [
+      "#FFCCCC","#FFE5CC","#FFFFCC","#E5FFCC","#CCFFCC","#CCFFE5","#CCFFFF","#CCE5FF","#CCCCFF","#E5CCFF",
+      "#FFCCFF","#FFCCE5","#FFB2B2","#FFD6A5","#FFEF9F","#CAE799","#A6E3A1","#99DDCC","#9FDBFF","#ADC1FF",
+      "#C8B2FF","#E0B2FF","#FFB2F5","#FFB2D7","#FFB2B2","#FF8282","#FFAA64","#FFD246","#B4DC5A","#78D296"
+    ];
+
+    let mode = '3d';
+    let globalData = []; // {id,name,w,d,h,winArea, x2d,y2d}
+    let globalWallThicknessMm = 200; // 기본값
+    let globalWallThicknessM = 0.2;
+
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+    const inputEl = $('dataInput');
+    const tooltip = $('tooltip');
+
+    function setStatus(html){ statusEl.innerHTML = html; }
+
+    // -----------------------------
+    // 1) 단위/파서
+    // -----------------------------
+    function numOnly(v){
+      if (v === null || v === undefined) return '';
+      return String(v).replace(/[^0-9.\-]/g,'').trim();
+    }
+    function smartUnit(v){
+      const s = numOnly(v);
+      const n = parseFloat(s);
+      if (!isFinite(n) || n <= 0) return 0;
+      if (n > 100) return n / 1000; // mm 추정
+      return n;
+    }
+    function smartThickness(v, fallbackM){
+      const s = numOnly(v);
+      const n = parseFloat(s);
+      if (!isFinite(n) || n <= 0) return fallbackM;
+      if (n > 10) return n / 1000; // 200 -> 0.2m
+      return n; // 0.2 -> 0.2m
+    }
+    function getGlobalThickness(){
+      const raw = $('wallThk').value;
+      let t = smartThickness(raw, 0.2);
+      // 너무 얇거나 이상하면 안전하게 0.2로
+      if (!isFinite(t) || t <= 0) t = 0.2;
+      if (t < 0.03) t = 0.03; // 최소 30mm
+      if (t > 1.0) t = 1.0;   // 최대 1m
+      globalWallThicknessM = t;
+      globalWallThicknessMm = Math.round(t*1000);
+      return t;
+    }
+
+    function splitCols(line){
+      const t = (line || '').trim();
+      if (!t) return null;
+      if (t.includes('\t')) return t.split('\t').map(x=>x.trim());
+      if (t.includes(',')) return t.split(',').map(x=>x.trim());
+      return t.split(/\s+/).map(x=>x.trim());
+    }
+    function detectHeader(cols){
+      const lower = cols.map(c => String(c).toLowerCase().replace(/\s/g,''));
+      const map = {};
+      lower.forEach((c,i)=>{
+        if (/공간id|방id|id|번호/.test(c)) map.id=i;
+        if (/공간명|방이름|이름|name/.test(c)) map.name=i;
+        if (/가로|width|w|길이/.test(c)) map.w=i;
+        if (/세로|depth|d|너비/.test(c)) map.d=i;
+        if (/벽높이|높이|height|h/.test(c)) map.h=i;
+        if (/창면적|창문면적|windowarea|winarea/.test(c)) map.winArea=i;
+      });
+      if (map.name !== undefined && map.w !== undefined && map.d !== undefined) return map;
+      return null;
+    }
+
+    function parseText(text){
+      const lines = String(text||'').split(/\r?\n/);
+      const parsed = [];
+      let headerMap = null;
+      let autoId = 1;
+      let skipped = 0;
+
+      for (const line of lines){
+        const cols = splitCols(line);
+        if (!cols) continue;
+
+        if (!headerMap){
+          const hm = detectHeader(cols);
+          if (hm){
+            headerMap = hm;
+            continue;
+          }
+        }
+
+        const idxId = headerMap?.id ?? 0;
+        const idxName = headerMap?.name ?? 1;
+        const idxW = headerMap?.w ?? 2;
+        const idxD = headerMap?.d ?? 3;
+        const idxH = headerMap?.h ?? 4;
+        const idxWin = headerMap?.winArea;
+
+        const name = String(cols[idxName] ?? '').trim();
+        if (!name){ skipped++; continue; }
+
+        let id = parseInt(numOnly(cols[idxId] ?? ''),10);
+        if (!isFinite(id) || id <= 0) id = autoId;
+
+        const w = smartUnit(cols[idxW]);
+        const d = smartUnit(cols[idxD]);
+        let h = smartUnit(cols[idxH]);
+        if (!h) h = 2.3;
+
+        let winArea = 0;
+        if (idxWin !== undefined){
+          const wa = parseFloat(numOnly(cols[idxWin]));
+          if (isFinite(wa) && wa > 0) winArea = wa;
+        } else {
+          const joined = cols.join(' ');
+          const m = joined.match(/창면적\s*=?\s*([0-9.]+)/);
+          if (m){
+            const wa = parseFloat(m[1]);
+            if (isFinite(wa) && wa > 0) winArea = wa;
+          }
+        }
+
+        if (w > 0 && d > 0){
+          parsed.push({ id, name, w, d, h, winArea });
+          autoId = Math.max(autoId, id + 1);
+        } else {
+          skipped++;
+        }
+      }
+      return { parsed, skipped };
+    }
+
+    // -----------------------------
+    // 2) 초기화
+    // -----------------------------
+    const twod = $('twod');
+    const elev = $('elev');
+    const threeEl = $('three');
+
+    function hardReset({ clearInput=true } = {}){
+      twod.innerHTML = '';
+      elev.innerHTML = '';
+
+      pieces.forEach(p => scene.remove(p));
+      ghosts.forEach(g => scene.remove(g));
+      pieces = []; ghosts = []; hitMeshes = []; labels3D = [];
+      dragging = false; draggedGroup = null;
+
+      globalData = [];
+      if (clearInput) inputEl.value = '';
+
+      tooltip.style.display = 'none';
+      setStatus(`<b>상태</b><br/>초기화 완료. 다시 붙여넣고 <b>[도면 생성]</b> 누르세요.`);
+    }
+
+    window.addEventListener('pageshow', (e)=>{
+      if (e.persisted) hardReset({ clearInput:true });
+    });
+
+    // -----------------------------
+    // 3) 2D
+    // -----------------------------
+    const SCALE_2D = 40;
+    let active2D = null;
+    let active2DOffset = { x:0, y:0 };
+
+    function build2D(){
+      twod.innerHTML = '';
+      if (!globalData.length) return;
+
+      const START_X = 380, START_Y = 40, LIMIT = 980, GAP = 18;
+      let x = START_X, y = START_Y, rowH = 0;
+
+      const title = document.createElement('div');
+      title.style.position='absolute';
+      title.style.left='16px';
+      title.style.top='10px';
+      title.style.fontWeight='900';
+      title.style.fontSize='14px';
+      title.textContent='2D 모드: 방 조각을 드래그해서 맞추세요';
+      twod.appendChild(title);
+
+      globalData.forEach((d)=>{
+        const color = EXCEL_COLORS[(d.id-1) % EXCEL_COLORS.length] || '#ddd';
+        const wPx = d.w * SCALE_2D;
+        const dPx = d.d * SCALE_2D;
+
+        if (x + wPx > START_X + LIMIT){ x = START_X; y += rowH + GAP; rowH = 0; }
+
+        const div = document.createElement('div');
+        div.className='room2d';
+        div.dataset.id = d.id;
+        div.style.left = (d.x2d ?? (x+'px'));
+        div.style.top = (d.y2d ?? (y+'px'));
+        div.style.width = wPx+'px';
+        div.style.height = dPx+'px';
+        div.style.background = color;
+        div.innerHTML = `<b>${d.name}</b><span style="font-size:11px;color:#111">(${d.w}×${d.d}m)</span>`;
+        twod.appendChild(div);
+
+        x += wPx + GAP;
+        rowH = Math.max(rowH, dPx);
+      });
+    }
+
+    function save2DPositions(){
+      const nodes = twod.querySelectorAll('.room2d');
+      nodes.forEach(n=>{
+        const id = parseInt(n.dataset.id,10);
+        const m = globalData.find(x=>x.id===id);
+        if (m){
+          m.x2d = n.style.left;
+          m.y2d = n.style.top;
+        }
+      });
+    }
+
+    twod.addEventListener('pointerdown', (e)=>{
+      const target = e.target.closest('.room2d');
+      if (!target) return;
+      active2D = target;
+      active2D.classList.add('dragging');
+      const r = active2D.getBoundingClientRect();
+      active2DOffset.x = e.clientX - r.left;
+      active2DOffset.y = e.clientY - r.top;
+    });
+    twod.addEventListener('pointermove', (e)=>{
+      if (!active2D) return;
+      e.preventDefault();
+      const c = twod.getBoundingClientRect();
+      const cx = e.clientX - c.left + twod.scrollLeft;
+      const cy = e.clientY - c.top + twod.scrollTop;
+      active2D.style.left = (cx - active2DOffset.x) + 'px';
+      active2D.style.top  = (cy - active2DOffset.y) + 'px';
+    });
+    function end2D(){
+      if (!active2D) return;
+      active2D.classList.remove('dragging');
+      active2D = null;
+      save2DPositions();
+    }
+    twod.addEventListener('pointerup', end2D);
+    twod.addEventListener('pointerleave', end2D);
+
+    // -----------------------------
+    // 4) 입면(자동 전개도)
+    // -----------------------------
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+    function wallSVG(wallW, h, winArea, colorHex, label){
+      const wallArea = wallW * h;
+      const invalid = winArea > wallArea * 0.98;
+
+      const aspect = 1.6;
+      let patchW = winArea > 0 ? Math.sqrt(winArea * aspect) : 0;
+      let patchH = winArea > 0 ? (winArea / patchW) : 0;
+
+      patchW = clamp(patchW, 0, wallW * 0.9);
+      patchH = clamp(patchH, 0, h * 0.8);
+
+      const vbW = wallW;
+      const vbH = h;
+
+      const px = (vbW - patchW) / 2;
+      const py = (vbH - patchH) * 0.45;
+
+      const wallStroke = "#111827";
+      const wallFill = colorHex;
+      const winFill = invalid ? "rgba(255,77,77,0.45)" : "rgba(102,204,255,0.32)";
+      const winStroke = invalid ? "#7f0000" : "#0b4aa2";
+
+      const svg = `
+        <svg viewBox="0 0 ${vbW} ${vbH}" width="100%" preserveAspectRatio="xMidYMid meet">
+          <rect x="${vbW*0.08}" y="${vbH*0.08}" width="${vbW*(1-0.16)}" height="${vbH*(1-0.16)}"
+            fill="${wallFill}" fill-opacity="0.75" stroke="${wallStroke}" stroke-width="${Math.max(0.02, vbW*0.01)}" rx="${vbW*0.05}" />
+          ${
+            winArea>0 ? `
+            <rect x="${px}" y="${py}" width="${patchW}" height="${patchH}"
+              fill="${winFill}" stroke="${winStroke}" stroke-width="${Math.max(0.02, vbW*0.01)}" rx="${vbW*0.04}" />
+            ` : ''
+          }
+          <text x="${vbW*0.5}" y="${vbH*0.12}" text-anchor="middle" font-size="${Math.max(0.18, vbW*0.06)}"
+            font-family="Malgun Gothic, system-ui" font-weight="900" fill="#111">${label}</text>
+        </svg>
+      `;
+      return { svg, invalid };
+    }
+
+    function buildElevation(){
+      elev.innerHTML = '';
+      if (!globalData.length) return;
+
+      const t = globalWallThicknessM;
+
+      const totalFloorNet = globalData.reduce((s,r)=>s + (r.w*r.d), 0);
+      const totalFloorGrossEst = globalData.reduce((s,r)=>s + ((r.w+2*t)*(r.d+2*t)), 0);
+      const totalWallInner = globalData.reduce((s,r)=>s + ((r.w+r.d)*2*r.h), 0);
+      const totalWallOuter = globalData.reduce((s,r)=>s + (((r.w+2*t)+(r.d+2*t))*2*r.h), 0);
+      const totalWin = globalData.reduce((s,r)=>s + (r.winArea||0), 0);
+      const totalWallVolEst = globalData.reduce((s,r)=>{
+        const periOuter = ((r.w+2*t)+(r.d+2*t))*2;
+        return s + (periOuter * t * r.h);
+      }, 0);
+
+      const header = document.createElement('div');
+      header.className = 'elevHeader';
+      header.innerHTML = `
+        <div style="font-weight:900;font-size:14px;">입면(전개도) 자동 생성</div>
+        <div style="margin-top:6px;font-size:12px;color:#666;line-height:1.45;">
+          벽두께: <b>${(t*1000).toFixed(0)}mm</b><br/>
+          방 ${globalData.length}개 · 순면적(엑셀 동일) <b>${totalFloorNet.toFixed(2)}㎡</b> · 벽 포함 추정(참고) <b>${totalFloorGrossEst.toFixed(2)}㎡</b><br/>
+          벽면적(내측) <b>${totalWallInner.toFixed(2)}㎡</b> · 벽면적(외측 추정) <b>${totalWallOuter.toFixed(2)}㎡</b> · 창면적 <b>${totalWin.toFixed(2)}㎡</b><br/>
+          벽체부피(추정) <b>${totalWallVolEst.toFixed(2)}㎥</b><br/>
+          <span style="color:#111;font-weight:900;">캡처:</span> <kbd>P</kbd> (현재 화면 PNG 저장)
+        </div>
+      `;
+      elev.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'elevGrid';
+      elev.appendChild(grid);
+
+      globalData.forEach((r)=>{
+        const color = EXCEL_COLORS[(r.id-1) % EXCEL_COLORS.length] || "#ddd";
+        const wallAreas = [
+          { key:'앞', w:r.w, area:r.w*r.h },
+          { key:'뒤', w:r.w, area:r.w*r.h },
+          { key:'좌', w:r.d, area:r.d*r.h },
+          { key:'우', w:r.d, area:r.d*r.h },
+        ];
+        const totalA = wallAreas.reduce((s,x)=>s+x.area,0) || 1;
+
+        const win = r.winArea || 0;
+        const alloc = wallAreas.map(x => win * (x.area/totalA));
+
+        const card = document.createElement('div');
+        card.className = 'elevCard';
+        card.innerHTML = `
+          <div class="elevTitle">${r.name}</div>
+          <div class="elevMeta">
+            치수: <b>${r.w}×${r.d}×${r.h}m</b> · 벽두께 <b>${(t*1000).toFixed(0)}mm</b><br/>
+            창면적(총): <b>${win.toFixed(2)}㎡</b> (4면 자동 분배)
+          </div>
+        `;
+
+        const row = document.createElement('div');
+        row.className = 'wallRow';
+
+        let anyInvalid = false;
+
+        wallAreas.forEach((winfo, i)=>{
+          const { svg, invalid } = wallSVG(winfo.w, r.h, alloc[i], color, `${winfo.key}면`);
+          anyInvalid = anyInvalid || invalid;
+
+          const box = document.createElement('div');
+          box.className = 'wallBox';
+          box.innerHTML = `
+            <div class="wallLabel">${winfo.key}면 · 폭 ${winfo.w}m · 높이 ${r.h}m</div>
+            <div class="wallSvgWrap">${svg}</div>
+            <div style="margin-top:6px;font-size:12px;color:#666;">
+              벽면적 ${winfo.area.toFixed(2)}㎡ · 창(분배) ${alloc[i].toFixed(2)}㎡
+            </div>
+          `;
+          row.appendChild(box);
+        });
+
+        card.appendChild(row);
+
+        const note = document.createElement('div');
+        note.className = anyInvalid ? 'warn' : 'good';
+        note.textContent = anyInvalid
+          ? '⚠ 어떤 면은 창면적이 벽면적보다 커요. 입력(창면적) 확인!'
+          : '✓ 창면적/벽면적 비율이 정상 범위로 보입니다.';
+        card.appendChild(note);
+
+        grid.appendChild(card);
+      });
+    }
+
+    // -----------------------------
+    // 5) 3D
+    // -----------------------------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf2f2f2);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(12, 12, 16);
+    camera.lookAt(0,0,0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    threeEl.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+    dir.position.set(50, 80, 50);
+    dir.castShadow = true;
+    scene.add(dir);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.GridHelper(100,100,0xbbbbbb,0xeeeeee));
+
+    let pieces = [], ghosts = [], hitMeshes = [], labels3D = [];
+    let labelsVisible = true, ghostsVisible = true;
+    let shiftDown = false;
+
+    const raycaster = new THREE.Raycaster();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+    const dragOffset = new THREE.Vector3();
+    let dragging = false;
+    let draggedGroup = null;
+
+    function makeLabelSprite(text1, text2){
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.font = 'bold 40px Malgun Gothic';
+      const w = ctx.measureText(text1).width + 70;
+      canvas.width = Math.max(220, w);
+      canvas.height = 120;
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#111';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 38px Malgun Gothic';
+      ctx.fillText(text1, canvas.width/2, 42);
+      ctx.font = '26px Malgun Gothic';
+      ctx.fillText(text2, canvas.width/2, 86);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent:true }));
+      sprite.scale.set(canvas.width/20, 6, 1);
+      return sprite;
+    }
+
+    function addWindowPatch(group, w, h, depth, wallT, winArea){
+      if (!winArea || winArea <= 0) return;
+      const wallAreaFront = w * h;
+      const invalid = winArea > wallAreaFront * 0.98;
+
+      const aspect = 1.6;
+      let patchW = Math.sqrt(winArea * aspect);
+      let patchH = winArea / patchW;
+
+      patchW = Math.min(patchW, w * 0.9);
+      patchH = Math.min(patchH, h * 0.8);
+
+      const mat = new THREE.MeshBasicMaterial({
+        color: invalid ? 0xff4d4d : 0x66ccff,
+        transparent: true,
+        opacity: invalid ? 0.45 : 0.32,
+        side: THREE.DoubleSide
+      });
+      const geo = new THREE.PlaneGeometry(patchW, patchH);
+      const mesh = new THREE.Mesh(geo, mat);
+
+      // 내부면(실내측) 전면벽에 붙이기: z = -depth/2 + epsilon
+      mesh.position.set(0, h*0.58, -(depth/2) + 0.002);
+      group.add(mesh);
+
+      const edge = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ color: invalid ? 0x7f0000 : 0x0b4aa2 })
+      );
+      edge.position.copy(mesh.position);
+      group.add(edge);
+
+      group.userData.windowInvalid = invalid;
+    }
+
+    function create3DRoom(d, colorHex, wallT){
+      const group = new THREE.Group();
+      const w = d.w, depth = d.d, h = d.h;
+      const t = wallT;
+
+      const matColor = new THREE.Color(colorHex);
+
+      // 바닥(순면적 기준)
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, depth),
+        new THREE.MeshStandardMaterial({ color: matColor, side: THREE.DoubleSide })
+      );
+      floor.rotation.x = -Math.PI/2;
+      floor.position.y = 0.01;
+      floor.receiveShadow = true;
+      group.add(floor);
+
+      // 벽은 바닥 외곽에 “바깥쪽으로” 두께가 생기도록 배치
+      const wallMat = new THREE.MeshStandardMaterial({ color: matColor, roughness:0.75, transparent:true, opacity:0.88 });
+
+      // 앞/뒤 벽: 폭 = w + 2t, 두께 = t
+      const front = new THREE.Mesh(new THREE.BoxGeometry(w + 2*t, h, t), wallMat);
+      front.position.set(0, h/2, -(depth/2 + t/2));
+      group.add(front);
+
+      const back = front.clone();
+      back.position.set(0, h/2, +(depth/2 + t/2));
+      group.add(back);
+
+      // 좌/우 벽: 길이(깊이) = depth + 2t, 두께 = t
+      const side = new THREE.Mesh(new THREE.BoxGeometry(t, h, depth + 2*t), wallMat);
+      side.position.set(-(w/2 + t/2), h/2, 0);
+      group.add(side);
+
+      const side2 = side.clone();
+      side2.position.set(+(w/2 + t/2), h/2, 0);
+      group.add(side2);
+
+      // 창 패치(초보용: 총 창면적을 전면에 표시)
+      addWindowPatch(group, w, h, depth, t, d.winArea);
+
+      const label = makeLabelSprite(d.name, `(${d.w}×${d.d}×${d.h}m)`);
+      label.position.set(0, h + 2.2, 0);
+      label.visible = labelsVisible;
+      group.add(label);
+      labels3D.push(label);
+
+      // 드래그 히트 영역(바닥면)
+      const hit = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, depth),
+        new THREE.MeshBasicMaterial({ visible:false })
+      );
+      hit.rotation.x = -Math.PI/2;
+      hit.position.y = 0.12;
+      hit.userData.parentGroup = group;
+      group.add(hit);
+      hitMeshes.push(hit);
+
+      // 지표 계산
+      const floorNet = w * depth;
+      const floorGrossEst = (w + 2*t) * (depth + 2*t);
+      const periInner = (w + depth) * 2;
+      const periOuter = ((w + 2*t) + (depth + 2*t)) * 2;
+      const wallAreaInner = periInner * h;
+      const wallAreaOuter = periOuter * h;
+      const winA = d.winArea || 0;
+      const wallNetInner = Math.max(0, wallAreaInner - winA);
+      const wallVolEst = periOuter * t * h;
+
+      group.userData = {
+        id: d.id,
+        name: d.name,
+        w, d: depth, h,
+        wallT: t,
+        winArea: winA,
+        metrics: {
+          floorNet, floorGrossEst,
+          periInner, periOuter,
+          wallAreaInner, wallAreaOuter,
+          wallNetInner,
+          wallVolEst
+        },
+        targetPos: new THREE.Vector3(),
+        windowInvalid: false
+      };
+
+      return group;
+    }
+
+    function build3D(){
+      pieces.forEach(p => scene.remove(p));
+      ghosts.forEach(g => scene.remove(g));
+      pieces = []; ghosts = []; hitMeshes = []; labels3D = [];
+      tooltip.style.display = 'none';
+
+      const t = globalWallThicknessM;
+
+      let x=0, z=0, rowH=0;
+      const LIMIT = 25;
+
+      globalData.forEach(d=>{
+        const color = EXCEL_COLORS[(d.id-1) % EXCEL_COLORS.length] || "#ccc";
+        const g = create3DRoom(d, color, t);
+
+        if (x + d.w > LIMIT){ x=0; z += rowH + 0.6; rowH=0; }
+
+        g.userData.targetPos.set(x + d.w/2, 0, z + d.d/2);
+        x += d.w + 0.6;
+        rowH = Math.max(rowH, d.d);
+
+        const ghost = new THREE.Mesh(
+          new THREE.PlaneGeometry(d.w, d.d),
+          new THREE.MeshBasicMaterial({ color:0x111111, transparent:true, opacity:0.14, side:THREE.DoubleSide })
+        );
+        ghost.rotation.x = -Math.PI/2;
+        ghost.position.copy(g.userData.targetPos);
+        ghost.position.y = 0.005;
+        ghost.visible = ghostsVisible;
+        scene.add(ghost);
+        ghosts.push(ghost);
+
+        g.position.set(g.userData.targetPos.x + (Math.random()-0.5)*15, 0, g.userData.targetPos.z + 8 + Math.random()*8);
+        scene.add(g);
+        pieces.push(g);
+      });
+    }
+
+    // -----------------------------
+    // 6) 모드 스위치
+    // -----------------------------
+    function switchMode(next){
+      if (mode === '2d') save2DPositions();
+      mode = next;
+
+      $('mode2d').classList.toggle('active', mode==='2d');
+      $('mode3d').classList.toggle('active', mode==='3d');
+      $('modeElev').classList.toggle('active', mode==='elev');
+
+      twod.style.display = (mode==='2d') ? 'block' : 'none';
+      threeEl.style.display = (mode==='3d') ? 'block' : 'none';
+      elev.style.display = (mode==='elev') ? 'block' : 'none';
+      tooltip.style.display = 'none';
+
+      if (globalData.length){
+        if (mode==='2d') build2D();
+        else if (mode==='3d') build3D();
+        else buildElevation();
+      }
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    $('mode2d').addEventListener('click', ()=>switchMode('2d'));
+    $('mode3d').addEventListener('click', ()=>switchMode('3d'));
+    $('modeElev').addEventListener('click', ()=>switchMode('elev'));
+
+    // -----------------------------
+    // 7) 버튼들
+    // -----------------------------
+    $('resetBtn').addEventListener('click', ()=>{
+      if (confirm('초기화할까요? (입력/도형 모두 삭제)')){
+        hardReset({ clearInput:true });
+      }
+    });
+
+    $('clearInputBtn').addEventListener('click', ()=>{ inputEl.value=''; });
+
+    $('sampleBtn').addEventListener('click', ()=>{
+      inputEl.value =
+`공간ID\t공간명\t가로(m)\t세로(m)\t벽높이(m)\t창면적(㎡)
+1\t거실\t5.3\t2.4\t2.3\t3.2
+2\t방1\t2.4\t2.4\t2.3\t0
+3\t방2\t3.8\t5.45\t2.3\t1.5
+4\t복도1\t1.55\t5.55\t2.3\t0
+5\t방3\t2.45\t5.55\t2.3\t2.0`;
+      setStatus(`<b>상태</b><br/>샘플 입력 완료. 이제 <b>[도면 생성]</b>을 눌러보세요.`);
+    });
+
+    $('pasteBtn').addEventListener('click', async ()=>{
+      try{
+        const t = await navigator.clipboard.readText();
+        if (!t) { alert('클립보드에 텍스트가 없어요.'); return; }
+        inputEl.value = t;
+        setStatus(`<b>상태</b><br/><span class="ok">클립보드 내용 불러오기 완료!</span> 이제 <b>[도면 생성]</b> 누르세요.`);
+      }catch(e){
+        alert('클립보드 접근이 차단됐어요. 직접 붙여넣기(Ctrl+V)로 해주세요.');
+      }
+    });
+
+    $('buildBtn').addEventListener('click', ()=>{
+      const t = getGlobalThickness(); // 벽두께 확정
+      const { parsed, skipped } = parseText(inputEl.value || '');
+      if (!parsed.length){
+        setStatus(`<b>상태</b><br/><span class="bad">인식된 방이 0개</span>입니다. 표를 통째로 복사해서 붙여넣고 다시 눌러주세요.`);
+        return;
+      }
+      globalData = parsed;
+
+      const totalFloorNet = globalData.reduce((s,r)=>s + (r.w*r.d), 0);
+      const totalFloorGrossEst = globalData.reduce((s,r)=>s + ((r.w+2*t)*(r.d+2*t)), 0);
+      const totalWallInner = globalData.reduce((s,r)=>s + ((r.w+r.d)*2*r.h), 0);
+      const totalWallOuter = globalData.reduce((s,r)=>s + (((r.w+2*t)+(r.d+2*t))*2*r.h), 0);
+      const totalWin = globalData.reduce((s,r)=>s + (r.winArea||0), 0);
+      const totalWallNetInner = Math.max(0, totalWallInner - totalWin);
+      const totalWallVolEst = globalData.reduce((s,r)=>{
+        const periOuter = ((r.w+2*t)+(r.d+2*t))*2;
+        return s + (periOuter * t * r.h);
+      }, 0);
+
+      setStatus(
+        `<b>상태</b><br/>
+         벽두께: <b>${(t*1000).toFixed(0)}mm</b><br/>
+         방 <b>${globalData.length}</b>개 인식 / 건너뜀 <b>${skipped}</b>줄<br/>
+         순면적(엑셀 동일): <b>${totalFloorNet.toFixed(2)}㎡</b><br/>
+         벽 포함 추정(참고): <b>${totalFloorGrossEst.toFixed(2)}㎡</b><br/>
+         벽면적(내측): <b>${totalWallInner.toFixed(2)}㎡</b> / 창: <b>${totalWin.toFixed(2)}㎡</b> / 시공면적(내측-창): <b>${totalWallNetInner.toFixed(2)}㎡</b><br/>
+         벽면적(외측 추정): <b>${totalWallOuter.toFixed(2)}㎡</b> / 벽체부피(추정): <b>${totalWallVolEst.toFixed(2)}㎥</b><br/>
+         <span class="hint">※ “벽 포함 추정면적”은 방별 최대치 개념이라 공유벽이 있으면 중복될 수 있어요.</span>`
+      );
+
+      if (mode==='2d') build2D();
+      else if (mode==='3d') build3D();
+      else buildElevation();
+    });
+
+    // JSON 저장/불러오기(로컬)
+    $('jsonSaveBtn').addEventListener('click', ()=>{
+      const t = getGlobalThickness();
+      if (!globalData.length){
+        const { parsed } = parseText(inputEl.value || '');
+        if (!parsed.length){ alert('저장할 데이터가 없어요. 먼저 붙여넣고 도면 생성하세요.'); return; }
+        globalData = parsed;
+      }
+      const payload = {
+        app: "yugy.site",
+        name: "뚱뚜루 도면소생술 방목록",
+        version: "2.32",
+        savedAt: new Date().toISOString(),
+        wallThicknessMm: Math.round(t*1000),
+        rooms: globalData
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ddungdduru_rooms.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      alert('JSON 저장 완료! (다운로드 폴더 확인)');
+    });
+
+    $('jsonLoadBtn').addEventListener('click', ()=> $('jsonFile').click());
+    $('jsonFile').addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0];
+      if (!f) return;
+      try{
+        const text = await f.text();
+        const obj = JSON.parse(text);
+        const rooms = obj.rooms || obj.data || [];
+        if (!Array.isArray(rooms) || !rooms.length) throw new Error('rooms 없음');
+
+        // 벽두께 복원
+        const wt = obj.wallThicknessMm;
+        if (isFinite(wt) && wt > 0){
+          $('wallThk').value = String(wt);
+        }
+
+        const lines = [];
+        lines.push("공간ID\t공간명\t가로(m)\t세로(m)\t벽높이(m)\t창면적(㎡)");
+        rooms.forEach((r,i)=>{
+          const id = r.id ?? (i+1);
+          const name = r.name ?? '';
+          const w = r.w ?? 0;
+          const d = r.d ?? r.depth ?? 0;
+          const h = r.h ?? 2.3;
+          const wa = r.winArea ?? 0;
+          lines.push(`${id}\t${name}\t${w}\t${d}\t${h}\t${wa}`);
+        });
+        inputEl.value = lines.join('\n');
+
+        const parsed = parseText(inputEl.value).parsed;
+        globalData = parsed;
+
+        getGlobalThickness();
+
+        if (mode==='2d') build2D();
+        else if (mode==='3d') build3D();
+        else buildElevation();
+
+        setStatus(`<b>상태</b><br/><span class="ok">JSON 불러오기 완료!</span> 방 ${globalData.length}개.`);
+      }catch(err){
+        alert('JSON 형식이 맞지 않아요. (이 사이트에서 저장한 JSON을 올려주세요)');
+      }finally{
+        e.target.value = '';
+      }
+    });
+
+    // -----------------------------
+    // 8) 3D 인터랙션/툴팁/드래그
+    // -----------------------------
+    function getMouse(e){
+      const rect = renderer.domElement.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left)/rect.width) * 2 - 1,
+        y: -(((e.clientY - rect.top)/rect.height) * 2 - 1)
+      };
+    }
+
+    threeEl.addEventListener('pointerdown', (e)=>{
+      if (mode!=='3d' || !shiftDown) return;
+      const m = getMouse(e);
+      raycaster.setFromCamera(m, camera);
+      const hits = raycaster.intersectObjects(hitMeshes);
+      if (hits.length){
+        dragging = true;
+        draggedGroup = hits[0].object.userData.parentGroup;
+        controls.enabled = false;
+        tooltip.style.display = 'none';
+        renderer.domElement.style.cursor = 'grabbing';
+        raycaster.ray.intersectPlane(dragPlane, dragOffset);
+        dragOffset.sub(draggedGroup.position);
+      }
+    });
+
+    threeEl.addEventListener('pointermove', (e)=>{
+      if (mode!=='3d') return;
+
+      const m = getMouse(e);
+      raycaster.setFromCamera(m, camera);
+
+      if (dragging && draggedGroup){
+        const p = new THREE.Vector3();
+        raycaster.ray.intersectPlane(dragPlane, p);
+        draggedGroup.position.copy(p.sub(dragOffset));
+        return;
+      }
+
+      const hits = raycaster.intersectObjects(hitMeshes);
+      if (shiftDown && hits.length) renderer.domElement.style.cursor = 'grab';
+      else renderer.domElement.style.cursor = 'auto';
+
+      if (hits.length){
+        const u = hits[0].object.userData.parentGroup.userData;
+        tooltip.innerHTML =
+          `<b>${u.name}</b>
+           <div class="ttRow"><span class="ttLbl">치수</span><span class="ttVal">${u.w}×${u.d}×${u.h} m</span></div>
+           <div class="ttRow"><span class="ttLbl">벽두께</span><span class="ttVal">${(u.wallT*1000).toFixed(0)} mm</span></div>
+           <div class="ttRow"><span class="ttLbl">바닥(순)</span><span class="ttVal">${u.metrics.floorNet.toFixed(2)} ㎡</span></div>
+           <div class="ttRow"><span class="ttLbl">바닥(벽포함 추정)</span><span class="ttVal">${u.metrics.floorGrossEst.toFixed(2)} ㎡</span></div>
+           <div class="ttRow"><span class="ttLbl">둘레(내측)</span><span class="ttVal">${u.metrics.periInner.toFixed(2)} m</span></div>
+           <div class="ttRow"><span class="ttLbl">벽면적(내측)</span><span class="ttVal">${u.metrics.wallAreaInner.toFixed(2)} ㎡</span></div>
+           <div class="ttRow"><span class="ttLbl">창면적</span><span class="ttVal">${(u.winArea||0).toFixed(2)} ㎡</span></div>
+           <div class="ttRow"><span class="ttLbl">시공면적(내측-창)</span><span class="ttVal">${u.metrics.wallNetInner.toFixed(2)} ㎡</span></div>
+           <div class="ttRow"><span class="ttLbl">벽체부피(추정)</span><span class="ttVal">${u.metrics.wallVolEst.toFixed(2)} ㎥</span></div>
+          `;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top  = (e.clientY + 14) + 'px';
+      }else{
+        tooltip.style.display = 'none';
+      }
+    });
+
+    function endDrag(){
+      if (dragging && draggedGroup){
+        const t = draggedGroup.userData.targetPos;
+        if (draggedGroup.position.distanceTo(t) < 0.5) draggedGroup.position.copy(t);
+      }
+      dragging = false;
+      draggedGroup = null;
+      controls.enabled = true;
+      renderer.domElement.style.cursor = shiftDown ? 'grab' : 'auto';
+    }
+    threeEl.addEventListener('pointerup', endDrag);
+    threeEl.addEventListener('pointerleave', endDrag);
+
+    // -----------------------------
+    // 9) 단축키: P 캡처
+    // -----------------------------
+    window.addEventListener('keydown', (e)=>{
+      const k = e.key.toLowerCase();
+      if (k==='shift') shiftDown = true;
+
+      if (k==='p'){
+        if (mode==='2d'){
+          html2canvas(twod).then((c)=>{
+            const a = document.createElement('a');
+            a.download = '2D_Plan.png';
+            a.href = c.toDataURL('image/png');
+            a.click();
+          });
+        } else if (mode==='elev'){
+          html2canvas(elev).then((c)=>{
+            const a = document.createElement('a');
+            a.download = 'Elevation.png';
+            a.href = c.toDataURL('image/png');
+            a.click();
+          });
+        } else {
+          renderer.render(scene, camera);
+          const a = document.createElement('a');
+          a.download = '3D_View.png';
+          a.href = renderer.domElement.toDataURL('image/png');
+          a.click();
+        }
+      }
+
+      if (mode==='3d'){
+        if (k==='g'){ ghostsVisible = !ghostsVisible; ghosts.forEach(x=>x.visible=ghostsVisible); }
+        if (k==='l'){ labelsVisible = !labelsVisible; labels3D.forEach(x=>x.visible=labelsVisible); }
+      }
+    });
+    window.addEventListener('keyup', (e)=>{
+      if (e.key === 'Shift'){
+        shiftDown = false;
+        renderer.domElement.style.cursor = 'auto';
+      }
+    });
+
+    // -----------------------------
+    // 10) 리사이즈/애니메이션
+    // -----------------------------
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (mode==='2d') build2D();
+      if (mode==='elev') buildElevation();
+    });
+
+    function animate(){
+      requestAnimationFrame(animate);
+      if (mode==='3d'){
+        controls.update();
+        renderer.render(scene, camera);
+      }
+    }
+    animate();
+
+    // 시작
+    hardReset({ clearInput:true });
+    getGlobalThickness();
+    switchMode('3d');
+  </script>
+</body>
+</html>

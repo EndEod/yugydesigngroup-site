@@ -1,1065 +1,914 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>건축허가/신고 빠른판정 도우미 (베타)</title>
-  <meta name="description" content="건축허가 vs 건축신고(허가 갈음) 판단을 위한 입력형 체크리스트. GitHub Pages용 단일 index.html"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>대수선 허가/신고 판정기 (MVP) | 건축사 뚱뚜루</title>
+  <meta name="description" content="대수선(허가/신고) 자동 판정 MVP. 사용자는 공사 사실만 체크하면 됩니다." />
   <style>
     :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --ink:#111827;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --brand:#2563eb;
-      --ok:#16a34a;
+      --bg:#0b0f19;
+      --panel:#111827;
+      --card:#0f172a;
+      --line:rgba(255,255,255,.08);
+      --ink:#e5e7eb;
+      --muted:#9ca3af;
+      --accent:#22c55e;
       --warn:#f59e0b;
-      --bad:#dc2626;
-      --shadow: 0 10px 28px rgba(0,0,0,.08);
-      --radius:16px;
-      --radius2:22px;
+      --danger:#ef4444;
+      --btn:#1f2937;
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Malgun Gothic", Apple SD Gothic Neo, "Noto Sans KR", sans-serif;
-      background: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.10), transparent 55%),
-                  radial-gradient(900px 500px at 90% 0%, rgba(22,163,74,.10), transparent 55%),
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(34,197,94,.10), transparent 60%),
+                  radial-gradient(900px 700px at 85% 30%, rgba(245,158,11,.08), transparent 60%),
                   var(--bg);
       color:var(--ink);
     }
-    header{
-      padding:28px 18px 6px;
-      max-width:1200px;
-      margin:0 auto;
+    a{color:#93c5fd; text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1200px; margin:0 auto; padding:22px 16px 64px}
+    .top{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
+      padding:18px 18px; border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(15,23,42,.65));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
-    .title{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      flex-wrap:wrap;
+    .brand h1{
+      margin:0; font-size:20px; letter-spacing:-.2px; line-height:1.25;
     }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(37,99,235,.10);
-      color:#1d4ed8;
-      font-weight:700;
-      font-size:13px;
+    .brand p{margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.55}
+    .pillrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .pill{
+      padding:8px 10px; border:1px solid var(--line); border-radius:999px;
+      font-size:12px; color:var(--muted); background: rgba(0,0,0,.15);
+      display:flex; gap:8px; align-items:center;
     }
-    h1{
-      margin:0;
-      font-size:24px;
-      letter-spacing:-.2px;
-    }
-    .sub{
-      margin:10px 0 0;
-      color:var(--muted);
-      line-height:1.5;
-      font-size:14px;
-      max-width:980px;
-    }
-    .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:14px 18px 34px;
-      display:grid;
-      grid-template-columns: 1.35fr .65fr;
-      gap:16px;
+    .dot{width:8px; height:8px; border-radius:999px; background: var(--muted)}
+    .dot.ok{background: var(--accent)}
+    .dot.warn{background: var(--warn)}
+    .dot.bad{background: var(--danger)}
+    .grid{
+      display:grid; grid-template-columns: 1.25fr .75fr; gap:14px; margin-top:14px;
     }
     @media (max-width: 980px){
-      .wrap{grid-template-columns:1fr}
+      .grid{grid-template-columns: 1fr}
+      .pillrow{justify-content:flex-start}
     }
-    .card{
-      background:var(--card);
+    .panel{
       border:1px solid var(--line);
-      border-radius:var(--radius2);
+      background: rgba(17,24,39,.6);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding:16px;
+      overflow:hidden;
     }
-    .card h2{
-      margin:0 0 10px;
-      font-size:16px;
-      letter-spacing:-.2px;
+    .panelHead{
+      padding:14px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.12);
     }
-    .hint{
-      margin:0 0 12px;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.5;
-    }
-
-    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-    @media (max-width: 620px){ .grid2{grid-template-columns:1fr} }
-
-    .tiles{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:10px;
-    }
-    @media (max-width: 980px){ .tiles{grid-template-columns: repeat(2, 1fr);} }
-    .tile{
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:12px 12px 10px;
-      cursor:pointer;
-      background:#fff;
-      transition: transform .06s ease, border-color .06s ease, box-shadow .06s ease;
-      user-select:none;
-      min-height:74px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-    }
-    .tile:hover{ transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,.06); }
-    .tile .k{font-weight:800; font-size:15px;}
-    .tile .d{color:var(--muted); font-size:12px; line-height:1.35}
-    input[type="radio"]{display:none}
-    input[type="radio"]:checked + .tile{
-      border-color: rgba(37,99,235,.65);
-      box-shadow: 0 10px 22px rgba(37,99,235,.14);
-      background: linear-gradient(180deg, rgba(37,99,235,.08), rgba(37,99,235,.02));
-    }
-
-    label.row{
-      display:flex; gap:10px; align-items:flex-start;
-      padding:10px 12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:#fff;
-    }
-    .row input[type="checkbox"]{ margin-top:3px; transform: scale(1.15); }
-    .row .rt{display:flex; flex-direction:column; gap:4px;}
-    .row .rt b{font-size:14px}
-    .row .rt span{color:var(--muted); font-size:12.5px; line-height:1.45}
-
-    .field{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      padding:10px 12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:#fff;
-    }
-    .field label{font-size:12px; color:var(--muted);}
-    .field input, .field select{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:14px;
-      outline:none;
-      background:#fff;
-    }
-    .field input:focus, .field select:focus{
-      border-color: rgba(37,99,235,.6);
-      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
-    }
-
-    .actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:10px;
-    }
-    button{
-      border:0;
-      border-radius:14px;
-      padding:12px 14px;
-      font-weight:800;
-      cursor:pointer;
-      background:var(--brand);
-      color:#fff;
-      box-shadow: 0 10px 18px rgba(37,99,235,.20);
-    }
-    button.secondary{
-      background:#111827;
-      box-shadow: 0 10px 18px rgba(17,24,39,.18);
-    }
-    button.ghost{
-      background:#fff;
-      color:#111827;
-      border:1px solid var(--line);
-      box-shadow:none;
-    }
-    button:active{ transform: translateY(1px); }
-
-    .result{
-      border-radius:18px;
-      border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.65));
-      padding:14px;
-    }
-    .big{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-bottom:8px;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:10px 12px;
-      border-radius:999px;
-      font-weight:900;
-      letter-spacing:-.1px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-size:14px;
-    }
-    .pill.ok{ color: #065f46; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08); }
-    .pill.warn{ color: #92400e; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10); }
-    .pill.bad{ color: #7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.10); }
-
-    .why{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.55;
-    }
-    .list{
-      margin:10px 0 0;
-      padding-left:18px;
-      color:#111827;
-      font-size:13px;
-      line-height:1.6;
-    }
-    .list li{ margin:4px 0; }
-    .muted{color:var(--muted)}
-    .tiny{font-size:12px; color:var(--muted); line-height:1.5}
-
-    .progress{
-      display:flex; flex-direction:column; gap:10px;
+    .panelHead h2{margin:0; font-size:14px}
+    .panelHead .small{color:var(--muted); font-size:12px}
+    .panelBody{padding:14px 16px}
+    .stepper{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
     }
     .step{
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:12px;
-      background:#fff;
-    }
-    .step .top{
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
-    }
-    .step b{font-size:14px}
-    .chip{
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
-      color:var(--muted);
-      white-space:nowrap;
-    }
-    .chip.done{ color:#065f46; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08); }
-    .chip.todo{ color:#92400e; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10); }
-    .chip.block{ color:#7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.10); }
-    .step p{margin:8px 0 0; color:var(--muted); font-size:12.5px; line-height:1.55}
-
-    .foot{
-      margin-top:10px;
-      padding-top:10px;
-      border-top:1px dashed var(--line);
+      display:flex; gap:10px; align-items:center;
+      padding:8px 10px; border:1px solid var(--line); border-radius:999px;
+      background: rgba(15,23,42,.55);
       color:var(--muted);
       font-size:12px;
-      line-height:1.6;
     }
-
-    .hide{display:none !important;}
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:18px;
-      transform:translateX(-50%);
-      background:#111827;
-      color:#fff;
+    .step b{
+      width:20px; height:20px; border-radius:999px; display:inline-flex;
+      align-items:center; justify-content:center;
+      background: rgba(255,255,255,.06);
+      color:var(--ink);
+      font-size:12px;
+    }
+    .step.active{border-color: rgba(34,197,94,.45); color:var(--ink)}
+    .step.active b{background: rgba(34,197,94,.18)}
+    .step.done{border-color: rgba(34,197,94,.35); color: rgba(229,231,235,.85)}
+    .step.done b{background: rgba(34,197,94,.14); color: rgba(229,231,235,.95)}
+    .actions{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    button{
+      border:1px solid var(--line);
+      background: rgba(31,41,55,.75);
+      color:var(--ink);
       padding:10px 12px;
-      border-radius:14px;
+      border-radius: 12px;
+      cursor:pointer;
       font-size:13px;
-      box-shadow: 0 10px 22px rgba(0,0,0,.22);
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease, transform .18s ease;
     }
-    .toast.show{
-      opacity:1;
-      transform:translateX(-50%) translateY(-2px);
+    button:hover{filter:brightness(1.07)}
+    button.primary{
+      background: linear-gradient(180deg, rgba(34,197,94,.95), rgba(22,163,74,.85));
+      border-color: rgba(34,197,94,.55);
+      color: #06230f;
+      font-weight:700;
     }
-    .split{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
+    button.ghost{
+      background: transparent;
+    }
+    button.danger{
+      background: rgba(239,68,68,.14);
+      border-color: rgba(239,68,68,.35);
+      color: rgba(255,255,255,.95);
+    }
+    .note{
+      margin:10px 0 0;
+      font-size:12px; color:var(--muted); line-height:1.6;
+    }
+    .kpi{
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+    }
+    .kpi .box{
+      border:1px solid var(--line); border-radius: var(--radius2);
+      padding:10px 12px; background: rgba(15,23,42,.55);
+    }
+    .kpi .box .t{font-size:12px; color:var(--muted)}
+    .kpi .box .v{font-size:14px; margin-top:6px; font-weight:700}
+    .fieldRow{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 720px){ .fieldRow{grid-template-columns: 1fr} }
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+    input, select, textarea{
+      width:100%;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      color: var(--ink);
+      outline:none;
+    }
+    textarea{min-height:92px; resize:vertical}
+    input::placeholder, textarea::placeholder{color: rgba(156,163,175,.7)}
+    .cards{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px}
+    @media (max-width: 980px){ .cards{grid-template-columns: 1fr} }
+    .card{
+      border:1px solid var(--line);
+      border-radius: var(--radius2);
+      background: rgba(15,23,42,.55);
+      padding:12px 12px;
+    }
+    .card h3{margin:0; font-size:13px}
+    .card .sub{margin:6px 0 0; font-size:12px; color:var(--muted); line-height:1.55}
+    .miniRow{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px}
+    @media (max-width: 520px){ .miniRow{grid-template-columns: 1fr} }
+    .badge{
+      display:inline-flex; gap:6px; align-items:center;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 8px;
+      font-size:11px;
+      color: rgba(229,231,235,.92);
+      background: rgba(0,0,0,.18);
+      margin-top:8px;
+    }
+    .badge .s{color:var(--muted)}
+    .hr{height:1px; background: var(--line); margin:12px 0}
+    .result{
+      border:1px solid var(--line);
+      border-radius: var(--radius2);
+      padding:12px 12px;
+      background: rgba(0,0,0,.18);
+    }
+    .result .headline{font-size:16px; font-weight:900; margin:0}
+    .result .tagline{margin:8px 0 0; color:var(--muted); font-size:12px; line-height:1.6}
+    .result.good{border-color: rgba(34,197,94,.35)}
+    .result.warn{border-color: rgba(245,158,11,.35)}
+    .result.bad{border-color: rgba(239,68,68,.35)}
+    ul{margin:10px 0 0; padding-left:18px; color: rgba(229,231,235,.92)}
+    li{margin:6px 0; color: rgba(229,231,235,.92)}
+    .codebox{
+      font-family: var(--mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: rgba(0,0,0,.25);
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding:10px 10px;
+      margin-top:10px;
+    }
+    .hint{
+      font-size:12px; color:var(--muted); line-height:1.6;
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding:10px 10px;
+      background: rgba(0,0,0,.14);
+    }
+    .rightSticky{
+      position: sticky;
+      top: 14px;
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <div class="title">
-      <span class="badge">🧭 의사결정 진행상황이 보이는 버전</span>
-      <h1>건축허가 vs 건축신고(허가 갈음) 빠른판정 도우미</h1>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1>대수선 허가/신고 판정기 (MVP)</h1>
+        <p>
+          사용자는 <b>공사 사실</b>만 체크합니다. 도구가 <b>법령 로직</b>으로
+          “대수선 해당 여부”와 “허가 vs 신고”를 자동 판정합니다. 🧭
+        </p>
+      </div>
+      <div class="pillrow" aria-label="상태 배지">
+        <div class="pill"><span class="dot ok"></span>대수선 범위: 시행령 기준</div>
+        <div class="pill"><span class="dot warn"></span>신고 가능 범위: 시행령 제11조②</div>
+        <div class="pill"><span class="dot"></span>MVP: 대수선만 우선 구현</div>
+      </div>
     </div>
-    <p class="sub">
-      이 페이지는 “허가인지, 신고(허가 갈음)인지, 추가검토인지”를 <b>입력만으로</b> 빠르게 정리해주는 체크리스트형 도구입니다.<br/>
-      ⚠️ 최종 판단은 관할 허가권자(구청 등)와 법령/조례/대통령령 세부기준에 따라 달라질 수 있어요.
-    </p>
-  </header>
 
-  <main class="wrap">
-    <!-- LEFT: Inputs + Result -->
-    <section class="split">
-      <div class="card">
-        <h2>1) 무엇을 하시나요? (행위 선택)</h2>
-        <p class="hint">가장 먼저 “행위”를 고르면, 아래 입력칸이 자동으로 필요한 것만 보여요.</p>
-
-        <div class="tiles" id="actionTiles">
-          <label>
-            <input type="radio" name="action" value="신축">
-            <div class="tile">
-              <div class="k">신축</div>
-              <div class="d">새로 짓기</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="증축">
-            <div class="tile">
-              <div class="k">증축</div>
-              <div class="d">면적 증가</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="개축">
-            <div class="tile">
-              <div class="k">개축</div>
-              <div class="d">전부/일부를 철거 후 새로</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="재축">
-            <div class="tile">
-              <div class="k">재축</div>
-              <div class="d">멸실 후 다시</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="이전">
-            <div class="tile">
-              <div class="k">이전</div>
-              <div class="d">옮겨 짓기</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="대수선">
-            <div class="tile">
-              <div class="k">대수선</div>
-              <div class="d">주요구조부 관련 수선 등</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="용도변경">
-            <div class="tile">
-              <div class="k">용도변경</div>
-              <div class="d">별표1 용도 변경</div>
-            </div>
-          </label>
-          <label>
-            <input type="radio" name="action" value="기타">
-            <div class="tile">
-              <div class="k">기타</div>
-              <div class="d">아직 모르겠음</div>
-            </div>
-          </label>
-        </div>
-
-        <div style="height:10px"></div>
-
-        <h2>2) 어디인가요? (입지)</h2>
-        <p class="hint">도시지역 여부와 “도시지역이 아닌 경우”의 세부 지역(관리/농림/자연환경보전)이 중요해요.</p>
-
-        <div class="grid2">
-          <div class="field">
-            <label for="isUrban">도시지역인가요?</label>
-            <select id="isUrban">
-              <option value="">선택</option>
-              <option value="yes">예, 도시지역</option>
-              <option value="no">아니오, 도시지역 아님</option>
-            </select>
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="panel">
+        <div class="panelHead">
+          <div>
+            <h2>의사결정 진행상황</h2>
+            <div class="small">다음 버튼만 눌러도 흐름이 이어집니다.</div>
           </div>
-
-          <div class="field" id="zoneWrap">
-            <label for="zone">도시지역이 아니라면, 어디인가요?</label>
-            <select id="zone">
-              <option value="">선택</option>
-              <option value="관리지역">관리지역</option>
-              <option value="농림지역">농림지역</option>
-              <option value="자연환경보전지역">자연환경보전지역</option>
-              <option value="기타">그 외(도시지역 아님)</option>
-            </select>
+          <div class="actions">
+            <button class="ghost" id="btnBack">이전</button>
+            <button class="primary" id="btnNext">다음</button>
           </div>
         </div>
 
-        <div style="height:10px"></div>
+        <div class="panelBody">
+          <div class="stepper" id="stepper" aria-label="단계 표시"></div>
 
-        <h2>3) 규모 입력 (면적/층수)</h2>
-        <p class="hint">필요한 칸만 채우면 돼요. 모르면 빈칸으로 두고 “추가검토”로 돌려도 됩니다.</p>
+          <div class="hr"></div>
 
-        <div class="grid2">
-          <div class="field" id="gfaWrap">
-            <label for="gfa">연면적(m²)</label>
-            <input id="gfa" type="number" inputmode="decimal" min="0" step="0.01" placeholder="예: 180">
-          </div>
-          <div class="field" id="floorsWrap">
-            <label for="floors">주택으로 쓰는 층수(지하 제외 기준으로 입력)</label>
-            <input id="floors" type="number" inputmode="numeric" min="0" step="1" placeholder="예: 2">
-          </div>
-          <div class="field hide" id="deltaWrap">
-            <label for="delta">증가 연면적 합계(m²) (증축/개축/재축 판단용)</label>
-            <input id="delta" type="number" inputmode="decimal" min="0" step="0.01" placeholder="예: 60">
-          </div>
-          <div class="field">
-            <label for="note">메모(선택)</label>
-            <input id="note" type="text" placeholder="예: 1층 일부 필로티 주차장">
-          </div>
-        </div>
+          <!-- STEP 1 -->
+          <section id="step1" class="stepView" aria-label="기본 정보">
+            <div class="hint">
+              ✅ 여기서는 “용도/규모”를 저장해 둡니다. (다음 버전에 신축·증축·용도변경 로직 확장할 때 바로 씁니다) <br/>
+              ✅ 이번 MVP의 판정은 <b>대수선(허가/신고)</b>에 집중합니다.
+            </div>
 
-        <div style="height:10px"></div>
-
-        <div id="majorRepairCard" class="hide">
-          <h2>4) 대수선 추가 질문</h2>
-          <p class="hint">대수선은 대통령령 요건 등 “체크박스”로 갈라지는 구간이 있어요. 몰라도 괜찮아요.</p>
-
-          <div class="grid2">
-            <label class="row">
-              <input type="checkbox" id="mrDecree">
-              <div class="rt">
-                <b>대통령령으로 정하는 대수선에 해당</b>
-                <span>예: 법령에서 지정한 유형의 대수선(세부기준은 별도 확인)</span>
+            <div class="fieldRow">
+              <div>
+                <label for="useMain">건축물 용도 (별표 1 분류, 검색용)</label>
+                <input id="useMain" list="useList" placeholder="예: 2. 공동주택 / 3. 제1종 근린생활시설" />
+                <datalist id="useList"></datalist>
+                <div class="note">Tip: 정확한 세부용도까지는 아래 “세부 메모”에 적어도 됩니다.</div>
               </div>
-            </label>
-            <label class="row">
-              <input type="checkbox" id="mrNoStructure">
-              <div class="rt">
-                <b>주요구조부 해체 없음 등 요건 충족</b>
-                <span>“도시지역이 아닌 관리/농림/자연환경보전 + 연면적 200 미만 + 3층 미만”일 때 중요</span>
+              <div>
+                <label for="addr">소재지(시·군·구 정도)</label>
+                <input id="addr" placeholder="예: 서울 서대문구" />
+                <div class="note">조례, 지구단위 등은 다음 버전에서 확장하기 좋아요.</div>
               </div>
-            </label>
-          </div>
-
-          <div class="tiny" style="margin-top:8px">
-            ※ 여기 체크는 “판정 로직”에 반영되지만, 실제 적용은 현장 조건과 법령 해석에 따라 달라질 수 있습니다.
-          </div>
-        </div>
-
-        <div id="useChangeCard" class="hide" style="margin-top:10px">
-          <h2>5) 용도변경 입력 (별표1 대분류 기준)</h2>
-          <p class="hint">지금은 “대분류가 달라지면 허가 가능성 높음” 수준의 1차 스크리닝입니다. (시설군 테이블은 추후 업데이트)</p>
-
-          <div class="grid2">
-            <div class="field">
-              <label for="useFrom">변경 전 용도(대분류)</label>
-              <select id="useFrom"></select>
             </div>
-            <div class="field">
-              <label for="useTo">변경 후 용도(대분류)</label>
-              <select id="useTo"></select>
+
+            <label for="memo">세부 메모(선택)</label>
+            <textarea id="memo" placeholder="예: 다가구(19세대 이하), 3층, 1층 필로티 주차, 내력벽 일부 보강 예정"></textarea>
+          </section>
+
+          <!-- STEP 2 -->
+          <section id="step2" class="stepView" aria-label="공사 사실 체크" style="display:none">
+            <div class="hint">
+              아래는 “대수선 범위(시행령)” 항목들입니다. <br/>
+              ❗ 여기서는 <b>허가/신고를 묻지 않습니다.</b> “무엇을 얼마나 하는지” 사실만 체크해 주세요.
+            </div>
+
+            <label for="hasDismantle">공사 과정에서 “주요구조부 해체(철거)”가 있나요?</label>
+            <select id="hasDismantle">
+              <option value="no" selected>아니오 (해체 없음)</option>
+              <option value="yes">예 (해체 있음)</option>
+              <option value="unsure">모름 (불확실)</option>
+            </select>
+            <div class="note">
+              ※ “신고로 가능한 대수선”은 시행령 제11조②에 따라 “주요구조부 해체가 없는 등” 요건이 붙습니다.
+            </div>
+
+            <div class="cards" id="worksCards"></div>
+
+            <div class="note">
+              숫자 기준 요약: 내력벽 30㎡ 이상, 기둥·보·지붕틀 3개 이상. (나머지는 항목 해당 시 대수선 트리거)
+            </div>
+          </section>
+
+          <!-- STEP 3 -->
+          <section id="step3" class="stepView" aria-label="판정 결과" style="display:none">
+            <div id="resultBox" class="result">
+              <p class="headline" id="resultTitle">결과가 여기에 표시됩니다.</p>
+              <p class="tagline" id="resultSub">왼쪽 단계에서 입력하면 자동으로 갱신됩니다.</p>
+              <div class="hr"></div>
+              <div id="resultDetail"></div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <h3 style="margin:0;font-size:13px">📌 복사 가능한 요약</h3>
+              <div class="codebox" id="copyText">아직 입력이 부족합니다.</div>
+              <div class="actions" style="margin-top:10px; justify-content:flex-start">
+                <button id="btnCopy">요약 복사</button>
+                <button class="danger" id="btnReset">전체 초기화</button>
+              </div>
+              <p class="note">
+                이 요약을 그대로 민원 문의, 설계자 체크리스트, 현장 기록에 붙여 넣을 수 있게 만들었습니다.
+              </p>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="hint">
+              🔎 참고 링크(법령 원문 확인용) <br/>
+              - 건축법 시행령 제11조(건축신고) <br/>
+              - 건축법 시행령 제3조의2(대수선의 범위)
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="panel rightSticky">
+        <div class="panelHead">
+          <div>
+            <h2>현재 입력 요약</h2>
+            <div class="small">“내가 뭘 체크했지?” 바로 보이게</div>
+          </div>
+        </div>
+        <div class="panelBody">
+          <div class="kpi">
+            <div class="box">
+              <div class="t">용도</div>
+              <div class="v" id="kpiUse">미입력</div>
+            </div>
+            <div class="box">
+              <div class="t">주요구조부 해체</div>
+              <div class="v" id="kpiDismantle">미입력</div>
             </div>
           </div>
 
-          <div class="tiny" style="margin-top:8px">
-            팁: 주택(단독/공동)은 대분류가 같아도 세부(다중/다가구/다세대/연립/아파트)에서 규정이 달라질 수 있어요.
-          </div>
-        </div>
+          <div class="hr"></div>
 
-        <div class="actions">
-          <button id="btnJudge" type="button">판정하기</button>
-          <button id="btnCopy" type="button" class="ghost">결과 요약 복사</button>
-          <button id="btnReset" type="button" class="secondary">초기화</button>
-        </div>
-
-        <div style="height:12px"></div>
-
-        <div class="result" id="resultBox">
-          <div class="big">
-            <div class="pill warn" id="resultPill">🟡 입력 대기</div>
-            <div class="tiny muted" id="resultShort">행위를 선택하고 필요한 입력을 채워주세요.</div>
+          <div>
+            <h3 style="margin:0;font-size:13px">체크된 공사 항목</h3>
+            <div class="note">대수선 트리거가 되는 항목만 자동으로 모아 보여줍니다.</div>
+            <ul id="kpiList"></ul>
           </div>
 
-          <p class="why" id="resultWhy">
-            이 도구는 “원칙(허가)”에서 시작해서 “예외(신고로 허가 갈음)” 조건을 순서대로 체크합니다.
-          </p>
+          <div class="hr"></div>
 
-          <ul class="list" id="resultBullets">
-            <li class="muted">아직 판정 전입니다.</li>
-          </ul>
-
-          <div class="foot">
-            <b>주의</b>: 이 페이지는 상담용 “빠른 정리” 도구입니다. 건축법 외에도 조례, 지구단위계획, 각종 개별법(소방법 등) 영향이 있을 수 있어요.
+          <div class="hint">
+            ⚙️ MVP 로드맵 (다음 확장 예정) <br/>
+            1) 신축·증축·개축·용도변경 로직 <br/>
+            2) 별표1 용도 기반 예외/제한 자동 안내 <br/>
+            3) 조례/지구단위/방화지구 등 위치 조건 추가
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- RIGHT: Progress -->
-    <aside class="card">
-      <h2>🧭 의사결정 진행상황</h2>
-      <p class="hint">여기만 보면 “지금 어디까지 입력했는지”와 “어떤 규칙에 걸렸는지”가 보여요.</p>
-
-      <div class="progress">
-        <div class="step" id="p1">
-          <div class="top">
-            <b>Step 1. 행위 선택</b>
-            <span class="chip todo" id="p1c">입력 필요</span>
-          </div>
-          <p id="p1t">신축/증축/개축/재축/이전/대수선/용도변경 중 하나를 고르세요.</p>
-        </div>
-
-        <div class="step" id="p2">
-          <div class="top">
-            <b>Step 2. 입지 입력</b>
-            <span class="chip todo" id="p2c">입력 필요</span>
-          </div>
-          <p id="p2t">도시지역 여부를 선택하고, 도시지역이 아니라면 세부 지역을 고르세요.</p>
-        </div>
-
-        <div class="step" id="p3">
-          <div class="top">
-            <b>Step 3. 규모 입력</b>
-            <span class="chip todo" id="p3c">입력 필요</span>
-          </div>
-          <p id="p3t">연면적, 층수, (증축/개축/재축이면) 증가 연면적을 입력하세요.</p>
-        </div>
-
-        <div class="step" id="p4">
-          <div class="top">
-            <b>Step 4. 예외조건 체크</b>
-            <span class="chip todo" id="p4c">진행 중</span>
-          </div>
-          <p id="p4t">원칙은 허가입니다. 예외(신고로 허가 갈음)에 해당하면 결과가 바뀝니다.</p>
-        </div>
-
-        <div class="step" id="p5">
-          <div class="top">
-            <b>Step 5. 결과</b>
-            <span class="chip todo" id="p5c">대기</span>
-          </div>
-          <p id="p5t">“허가 / 신고(허가 갈음) / 추가검토” 중 하나로 안내됩니다.</p>
-        </div>
-      </div>
-
-      <div class="foot">
-        <b>사용 팁</b><br/>
-        1) 모르면 빈칸으로 두고 “판정하기” 누르세요. 그럼 “추가검토”로 안전하게 빠집니다.<br/>
-        2) “결과 요약 복사” 누르면 카톡/메모장으로 바로 붙여넣기 됩니다.
-      </div>
-    </aside>
-  </main>
-
-  <div class="toast" id="toast">복사 완료!</div>
+    </div>
+  </div>
 
   <script>
-    // ====== Data: 별표1 대분류(요약) ======
-    const USE_CATEGORIES = [
-      ["", "선택"],
-      ["1", "1. 단독주택"],
-      ["2", "2. 공동주택"],
-      ["3", "3. 제1종 근린생활시설"],
-      ["4", "4. 제2종 근린생활시설"],
-      ["5", "5. 문화 및 집회시설"],
-      ["6", "6. 종교시설"],
-      ["7", "7. 판매시설"],
-      ["8", "8. 운수시설"],
-      ["9", "9. 의료시설"],
-      ["10", "10. 교육연구시설"],
-      ["11", "11. 노유자시설"],
-      ["12", "12. 수련시설"],
-      ["13", "13. 운동시설"],
-      ["14", "14. 업무시설"],
-      ["15", "15. 숙박시설"],
-      ["16", "16. 위락시설"],
-      ["17", "17. 공장"],
-      ["18", "18. 창고시설"],
-      ["19", "19. 위험물 저장 및 처리시설"],
-      ["20", "20. 자동차 관련 시설"],
-      ["21", "21. 동물 및 식물 관련 시설"],
-      ["22", "22. 자원순환 관련 시설"],
-      ["23", "23. 교정시설"],
-      ["23-2", "23의2. 국방·군사시설"],
-      ["24", "24. 방송통신시설"],
-      ["25", "25. 발전시설"],
-      ["26", "26. 묘지 관련 시설"],
-      ["27", "27. 관광 휴게시설"],
-      ["28", "28. 장례시설"],
-      ["29", "29. 야영장 시설"]
+    /***********************
+     * 0) 별표1 용도: MVP는 "검색용 목록"만 담아둡니다.
+     *    (지금은 저장만, 다음 버전에서 로직에 직접 사용)
+     ************************/
+    const USE_OPTIONS = [
+      "1. 단독주택 (단독/다중/다가구/공관)",
+      "2. 공동주택 (아파트/연립/다세대/기숙사)",
+      "3. 제1종 근린생활시설",
+      "4. 제2종 근린생활시설",
+      "5. 문화 및 집회시설",
+      "6. 종교시설",
+      "7. 판매시설",
+      "8. 운수시설",
+      "9. 의료시설",
+      "10. 교육연구시설",
+      "11. 노유자시설",
+      "12. 수련시설",
+      "13. 운동시설",
+      "14. 업무시설",
+      "15. 숙박시설",
+      "16. 위락시설",
+      "17. 공장",
+      "18. 창고시설",
+      "19. 위험물 저장 및 처리시설",
+      "20. 자동차 관련 시설",
+      "21. 동물 및 식물 관련 시설",
+      "22. 자원순환 관련 시설",
+      "23. 교정시설",
+      "23의2. 국방·군사시설",
+      "24. 방송통신시설",
+      "25. 발전시설",
+      "26. 묘지 관련 시설",
+      "27. 관광 휴게시설",
+      "28. 장례시설",
+      "29. 야영장 시설"
     ];
 
-    // ====== Helpers ======
-    const $ = (id)=>document.getElementById(id);
-    const toast = (msg)=>{
-      const t = $("toast");
-      t.textContent = msg || "완료!";
-      t.classList.add("show");
-      setTimeout(()=>t.classList.remove("show"), 1200);
-    };
-    const num = (v)=>{
-      const x = parseFloat(v);
-      return Number.isFinite(x) ? x : null;
-    };
+    /***********************
+     * 1) 대수선 범위(시행령 제3조의2) 항목들
+     *    - “대수선 해당 여부” 판단용
+     ************************/
+    const MAJOR_REPAIR_ITEMS = [
+      {
+        id: "bearingWall",
+        title: "내력벽",
+        desc: "벽면적 30㎡ 이상 수선/변경이면 대수선. 증설·해체도 대수선 트리거.",
+        metricLabel: "해당 벽면적 합계(㎡)",
+        metricType: "area",
+        threshold: 30,
+        reportEligible: true  // 신고 가능 후보(단, '수선' + 해체 없음 + 제11조② 범위)
+      },
+      {
+        id: "columns",
+        title: "기둥",
+        desc: "3개 이상 수선/변경이면 대수선. 증설·해체도 대수선 트리거.",
+        metricLabel: "해당 개수(개)",
+        metricType: "count",
+        threshold: 3,
+        reportEligible: true
+      },
+      {
+        id: "beams",
+        title: "보",
+        desc: "3개 이상 수선/변경이면 대수선. 증설·해체도 대수선 트리거.",
+        metricLabel: "해당 개수(개)",
+        metricType: "count",
+        threshold: 3,
+        reportEligible: true
+      },
+      {
+        id: "roofFrame",
+        title: "지붕틀",
+        desc: "3개 이상 수선/변경이면 대수선. 증설·해체도 대수선 트리거. (한옥 서까래 제외)",
+        metricLabel: "해당 개수(개)",
+        metricType: "count",
+        threshold: 3,
+        reportEligible: true
+      },
+      {
+        id: "fireCompartment",
+        title: "방화벽 또는 방화구획(바닥/벽)",
+        desc: "수선·변경·증설·해체 모두 대수선 트리거.",
+        metricLabel: "해당 여부",
+        metricType: "none",
+        threshold: null,
+        reportEligible: true
+      },
+      {
+        id: "stairs",
+        title: "주계단·피난계단·특별피난계단",
+        desc: "수선·변경·증설·해체 모두 대수선 트리거.",
+        metricLabel: "해당 여부",
+        metricType: "none",
+        threshold: null,
+        reportEligible: true
+      },
+      {
+        id: "unitPartyWall",
+        title: "세대 간 경계벽(다가구/다세대 해당)",
+        desc: "수선·변경·증설·해체 모두 대수선 트리거.",
+        metricLabel: "해당 여부",
+        metricType: "none",
+        threshold: null,
+        reportEligible: false  // 제11조② 신고 범위에는 없음(현재 기준)
+      },
+      {
+        id: "exteriorFinish",
+        title: "외벽 마감재",
+        desc: "벽면적 30㎡ 이상 수선/변경이면 대수선. 증설·해체도 대수선 트리거.",
+        metricLabel: "해당 벽면적 합계(㎡)",
+        metricType: "area",
+        threshold: 30,
+        reportEligible: false  // 제11조② 신고 범위에는 없음(현재 기준)
+      }
+    ];
 
-    // ====== Populate selects ======
-    function populateUseSelect(sel){
-      sel.innerHTML = "";
-      USE_CATEGORIES.forEach(([v, label])=>{
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = label;
-        sel.appendChild(opt);
+    const ACTIONS = [
+      { value: "none", label: "해당 없음" },
+      { value: "repair", label: "수선(보수, 교체 등)" },
+      { value: "change", label: "변경(배치/구조 변경)" },
+      { value: "add", label: "증설(추가 설치)" },
+      { value: "remove", label: "해체(철거/삭제)" }
+    ];
+
+    /***********************
+     * 2) Stepper
+     ************************/
+    const STEPS = [
+      { id: "step1", title: "1) 기본 정보" },
+      { id: "step2", title: "2) 공사 사실 체크" },
+      { id: "step3", title: "3) 자동 판정 결과" }
+    ];
+    let stepIndex = 0;
+
+    const elStepper = document.getElementById("stepper");
+    const btnBack = document.getElementById("btnBack");
+    const btnNext = document.getElementById("btnNext");
+
+    function renderStepper(){
+      elStepper.innerHTML = "";
+      STEPS.forEach((s, i) => {
+        const div = document.createElement("div");
+        div.className = "step" + (i === stepIndex ? " active" : (i < stepIndex ? " done" : ""));
+        div.innerHTML = `<b>${i+1}</b><span>${s.title}</span>`;
+        elStepper.appendChild(div);
       });
     }
-    populateUseSelect($("useFrom"));
-    populateUseSelect($("useTo"));
-
-    // ====== UI State ======
-    function getAction(){
-      const r = document.querySelector('input[name="action"]:checked');
-      return r ? r.value : "";
-    }
-    function requiredFieldsForAction(action){
-      // returns list of required keys
-      if (!action || action==="기타") return [];
-      if (action==="용도변경") return ["isUrban", "useFrom", "useTo"];
-      // 건축/대수선 계열
-      const keys = ["isUrban", "gfa", "floors"];
-      if (["증축","개축","재축"].includes(action)) keys.push("delta");
-      if (action==="대수선") keys.push("mrBox"); // special group
-      return keys;
+    function showStep(i){
+      stepIndex = Math.max(0, Math.min(STEPS.length-1, i));
+      document.querySelectorAll(".stepView").forEach(v => v.style.display = "none");
+      document.getElementById(STEPS[stepIndex].id).style.display = "";
+      btnBack.disabled = stepIndex === 0;
+      btnNext.textContent = stepIndex === STEPS.length-1 ? "완료" : "다음";
+      renderStepper();
+      // 결과는 step3에서 항상 최신화
+      if(stepIndex === 2) evaluateAndRender();
     }
 
-    function refreshVisibility(){
-      const action = getAction();
+    btnBack.addEventListener("click", () => showStep(stepIndex-1));
+    btnNext.addEventListener("click", () => showStep(stepIndex+1));
 
-      // delta field visibility
-      const needDelta = ["증축","개축","재축"].includes(action);
-      $("deltaWrap").classList.toggle("hide", !needDelta);
+    /***********************
+     * 3) UI build: 용도 datalist + 공사 카드
+     ************************/
+    const useList = document.getElementById("useList");
+    USE_OPTIONS.forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u;
+      useList.appendChild(opt);
+    });
 
-      // major repair visibility
-      $("majorRepairCard").classList.toggle("hide", action!=="대수선");
+    const worksCards = document.getElementById("worksCards");
+    const state = {
+      useMain: "",
+      addr: "",
+      memo: "",
+      hasDismantle: "no",
+      works: {} // id: { action, value }
+    };
 
-      // use change visibility
-      $("useChangeCard").classList.toggle("hide", action!=="용도변경");
+    function initWorksState(){
+      MAJOR_REPAIR_ITEMS.forEach(it => {
+        state.works[it.id] = { action: "none", value: "" };
+      });
+    }
+    initWorksState();
 
-      // zone visibility: only relevant when isUrban is 'no'
-      const isUrban = $("isUrban").value;
-      $("zoneWrap").classList.toggle("hide", isUrban!=="no");
-
-      // progress text
-      $("p1t").textContent = action ? `선택됨: ${action}` : "신축/증축/개축/재축/이전/대수선/용도변경 중 하나를 고르세요.";
+    function buildWorkCard(it){
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${it.title}</h3>
+        <div class="sub">${it.desc}</div>
+        <div class="badge"><span class="s">대수선 기준</span> ${it.threshold ? `수선/변경 ${it.threshold}${it.metricType==="area"?"㎡":"개"} 이상` : "해당 시"}</div>
+        <div class="miniRow">
+          <div>
+            <label>공사 형태</label>
+            <select data-role="action" data-id="${it.id}">
+              ${ACTIONS.map(a => `<option value="${a.value}">${a.label}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>${it.metricType === "none" ? "추가 정보(선택)" : it.metricLabel}</label>
+            <input data-role="value" data-id="${it.id}" placeholder="${it.metricType === "area" ? "예: 42" : (it.metricType === "count" ? "예: 3" : "예: 해당(간단 메모)")}" ${it.metricType === "none" ? "" : 'inputmode="decimal"'} />
+          </div>
+        </div>
+        <div class="note">
+          신고 가능 후보: ${it.reportEligible ? "예(단, 수선 + 해체 없음 + 제11조② 범위)" : "아님(현재 시행령 제11조② 범위 밖)"}
+        </div>
+      `;
+      return card;
     }
 
-    function progressSet(idChip, status, text){
-      const chip = $(idChip);
-      chip.classList.remove("done","todo","block");
-      chip.classList.add(status);
-      if (text) chip.textContent = text;
-      else chip.textContent = status==="done" ? "완료" : (status==="block" ? "입력 부족" : "입력 필요");
+    MAJOR_REPAIR_ITEMS.forEach(it => worksCards.appendChild(buildWorkCard(it)));
+
+    // Bind inputs
+    const useMainEl = document.getElementById("useMain");
+    const addrEl = document.getElementById("addr");
+    const memoEl = document.getElementById("memo");
+    const dismantleEl = document.getElementById("hasDismantle");
+
+    useMainEl.addEventListener("input", () => { state.useMain = useMainEl.value; renderRight(); });
+    addrEl.addEventListener("input", () => { state.addr = addrEl.value; });
+    memoEl.addEventListener("input", () => { state.memo = memoEl.value; });
+    dismantleEl.addEventListener("change", () => { state.hasDismantle = dismantleEl.value; renderRight(); if(stepIndex===2) evaluateAndRender(); });
+
+    worksCards.addEventListener("change", (e) => {
+      const t = e.target;
+      if(!t.dataset || !t.dataset.role) return;
+      const id = t.dataset.id;
+      if(t.dataset.role === "action"){
+        state.works[id].action = t.value;
+        renderRight();
+        if(stepIndex===2) evaluateAndRender();
+      }
+    });
+    worksCards.addEventListener("input", (e) => {
+      const t = e.target;
+      if(!t.dataset || t.dataset.role !== "value") return;
+      const id = t.dataset.id;
+      state.works[id].value = t.value;
+      renderRight();
+      if(stepIndex===2) evaluateAndRender();
+    });
+
+    /***********************
+     * 4) 핵심 로직
+     * - (A) 대수선 해당 여부: 시행령 제3조의2 기준
+     * - (B) 신고 가능 대수선 여부: 시행령 제11조② 기준
+     *     -> "수선"만 + 해체 없음 + (내력벽/기둥/보/지붕틀/방화구획/계단)만
+     ************************/
+
+    function toNumber(v){
+      if(v === null || v === undefined) return NaN;
+      const n = Number(String(v).replace(/,/g,"").trim());
+      return Number.isFinite(n) ? n : NaN;
     }
 
-    function updateProgress(missing){
-      const action = getAction();
-      // Step1
-      if (action && action!=="기타") progressSet("p1c","done","완료");
-      else progressSet("p1c","todo","입력 필요");
+    function evaluate(){
+      const triggers = []; // {id,title,why,action,value}
+      const reportViolations = []; // reasons blocking report
+      let reportCandidate = true;
 
-      // Step2: isUrban required always once action is meaningful
-      const isUrban = $("isUrban").value;
-      if (!action || action==="기타") progressSet("p2c","todo","입력 필요");
-      else{
-        if (!isUrban) progressSet("p2c","todo","입력 필요");
-        else if (isUrban==="no" && !$("zone").value) progressSet("p2c","todo","추가입력");
-        else progressSet("p2c","done","완료");
+      // 해체 여부(신고요건)
+      const dismantle = state.hasDismantle; // no/yes/unsure
+      if(dismantle === "yes") reportCandidate = false;
+      if(dismantle === "unsure"){
+        reportCandidate = false;
+        reportViolations.push("주요구조부 해체 여부가 불확실합니다(신고 요건 판단 불가).");
       }
 
-      // Step3: size fields for most actions
-      if (!action || action==="기타" || action==="용도변경"){
-        progressSet("p3c","todo","대상 아님");
-      } else{
-        const gfaOk = num($("gfa").value)!=null;
-        const floorsOk = num($("floors").value)!=null;
-        const needDelta = ["증축","개축","재축"].includes(action);
-        const deltaOk = !needDelta || (num($("delta").value)!=null);
-        if (gfaOk && floorsOk && deltaOk) progressSet("p3c","done","완료");
-        else progressSet("p3c","todo","입력 필요");
-      }
+      MAJOR_REPAIR_ITEMS.forEach(it => {
+        const w = state.works[it.id];
+        const action = w.action;
+        const raw = w.value;
+        const num = toNumber(raw);
 
-      // Step4: exception check step
-      if (!action || action==="기타") progressSet("p4c","todo","대기");
-      else progressSet("p4c", missing.length ? "block" : "done", missing.length ? "입력 부족" : "체크 완료");
+        if(action === "none") return;
 
-      // Step5 result
-      progressSet("p5c", missing.length ? "todo" : "done", missing.length ? "대기" : "표시됨");
-    }
+        // (A) 대수선 트리거 판정
+        let isMajorTrigger = false;
+        let why = "";
 
-    // ====== Core Logic ======
-    function judge(){
-      const action = getAction();
-      const isUrban = $("isUrban").value;          // yes/no
-      const zone = $("zone").value;                // 관리/농림/자연/기타
-      const gfa = num($("gfa").value);             // m2
-      const floors = num($("floors").value);       // count
-      const delta = num($("delta").value);         // m2
-      const note = ($("note").value || "").trim();
+        const isAddOrRemove = (action === "add" || action === "remove");
+        const isRepairOrChange = (action === "repair" || action === "change");
 
-      const mrDecree = $("mrDecree").checked;
-      const mrNoStructure = $("mrNoStructure").checked;
-
-      const useFrom = $("useFrom").value;
-      const useTo = $("useTo").value;
-
-      // Validate required fields
-      const req = requiredFieldsForAction(action);
-      const missing = [];
-
-      if (req.includes("isUrban") && !isUrban) missing.push("도시지역 여부");
-      if (isUrban==="no" && !zone && (action && action!=="기타")) missing.push("도시지역이 아닌 경우 지역(관리/농림/자연/기타)");
-
-      if (req.includes("gfa") && gfa==null) missing.push("연면적(m²)");
-      if (req.includes("floors") && floors==null) missing.push("층수(지하 제외)");
-      if (req.includes("delta") && delta==null) missing.push("증가 연면적 합계(m²)");
-
-      if (action==="용도변경"){
-        if (!useFrom) missing.push("변경 전 용도(대분류)");
-        if (!useTo) missing.push("변경 후 용도(대분류)");
-      }
-
-      refreshVisibility();
-      updateProgress(missing);
-
-      // If action not chosen or 기타
-      if (!action || action==="기타"){
-        renderResult({
-          status: "warn",
-          title: "🟡 입력 대기",
-          short: "먼저 행위를 선택해 주세요.",
-          why: "행위를 선택하면 필요한 질문이 자동으로 열립니다.",
-          bullets: [
-            "예: 증축이면 ‘증가 연면적 합계’를 입력하는 방식입니다.",
-            "모르면 ‘기타’를 선택하지 말고, 가장 가까운 행위를 선택해 주세요."
-          ],
-          path: []
-        });
-        return { ok:false, missing, decision:null };
-      }
-
-      // If missing required inputs
-      if (missing.length){
-        renderResult({
-          status:"warn",
-          title:"🟡 추가 입력 필요",
-          short:`아직 ${missing.length}개 입력이 비었습니다.`,
-          why:"모르는 칸은 빈칸으로 둘 수 있지만, 그 경우 결과는 ‘추가검토’로 안내됩니다.",
-          bullets: [
-            "비어있는 항목: " + missing.join(", "),
-            "그래도 진행하려면: 아는 값만 넣고 ‘판정하기’ 버튼을 다시 눌러 주세요."
-          ],
-          path: ["원칙은 허가", "예외조건 체크 전에 입력이 부족"]
-        });
-        return { ok:false, missing, decision:null };
-      }
-
-      // ===== Decision engine =====
-      // Outputs: PERMIT / REPORT_IN_LIEU / REVIEW
-      let decision = "PERMIT";
-      let reason = [];
-      let path = ["시작", "행위 확인"];
-
-      if (action==="용도변경"){
-        path.push("용도변경 모드");
-        if (useFrom && useTo){
-          if (useFrom !== useTo){
-            decision = "PERMIT";
-            reason.push("별표1 대분류가 서로 다릅니다. 일반적으로 허가 가능성이 높아집니다(추가검토 포함).");
-            path.push("대분류 상이 -> 허가 가능성 높음");
-          }else{
-            decision = "REVIEW";
-            reason.push("별표1 대분류는 동일합니다. 세부용도/시설군/면적/구조/피난 등 추가검토가 필요합니다.");
-            path.push("대분류 동일 -> 추가검토");
-          }
-        }else{
-          decision = "REVIEW";
-          reason.push("용도변경 전/후 용도 입력이 부족합니다.");
-          path.push("입력 부족 -> 추가검토");
-        }
-
-        renderDecision(decision, {
-          action, isUrban, zone, gfa, floors, delta, note,
-          useFrom, useTo, mrDecree, mrNoStructure,
-          reason, path
-        });
-        return { ok:true, missing:[], decision };
-      }
-
-      // 건축/대수선 계열
-      path.push("건축/대수선 모드");
-      // 원칙: 허가
-      decision = "PERMIT";
-      reason.push("원칙: 건축(신축/증축/개축/재축/이전) 및 대수선은 허가를 기본으로 봅니다.");
-
-      // 예외 1: 증축/개축/재축 증가연면적 합계 85㎡ 이하
-      if (["증축","개축","재축"].includes(action)){
-        path.push("예외(85㎡) 체크");
-        if (delta != null && delta <= 85){
-          decision = "REPORT_IN_LIEU";
-          reason.push(`예외: ${action} 증가 연면적 합계 ${delta}㎡ ≤ 85㎡ 이므로 ‘신고로 허가를 갈음’ 가능 구간입니다.`);
-          path.push("85㎡ 이하 충족 -> 신고(허가 갈음)");
+        if(it.metricType === "none"){
+          // 방화구획/계단/세대경계벽: 해당하면 바로 트리거
+          isMajorTrigger = true;
+          why = `“${ACTIONS.find(a=>a.value===action).label}” 선택`;
         } else {
-          path.push("85㎡ 예외 불충족");
-        }
-      }
-
-      // 예외 2/3: 도시지역이 아닌 관리/농림/자연환경보전 + 연면적<200 + 3층 미만
-      const nonUrbanSpecial = (isUrban==="no" && ["관리지역","농림지역","자연환경보전지역"].includes(zone));
-      if (decision !== "REPORT_IN_LIEU"){ // already decided by stronger simple rule
-        path.push("예외(비도시 + 특수지역) 체크");
-        if (nonUrbanSpecial){
-          const sizeOk = (gfa != null && gfa < 200);
-          const floorsOk = (floors != null && floors < 3);
-
-          if (sizeOk && floorsOk){
-            if (["신축","증축","개축","재축"].includes(action)){
-              decision = "REPORT_IN_LIEU";
-              reason.push("예외: 도시지역 아님 + (관리/농림/자연환경보전) + 연면적 200㎡ 미만 + 3층 미만 조건 충족으로 ‘신고로 허가 갈음’ 가능 구간입니다.");
-              path.push("200㎡/3층 미만 충족 -> 신고(허가 갈음)");
-            } else if (action==="대수선"){
-              // 대수선은 추가 요건 체크
-              if (mrNoStructure){
-                decision = "REPORT_IN_LIEU";
-                reason.push("예외: 비도시 특수지역 + 연면적 200㎡ 미만 + 3층 미만 + (주요구조부 해체 없음 등) 요건 체크됨 -> ‘신고로 허가 갈음’ 가능 구간.");
-                path.push("대수선 요건 체크됨 -> 신고(허가 갈음)");
-              } else {
-                decision = "REVIEW";
-                reason.push("대수선은 ‘주요구조부 해체 없음 등’ 대통령령 요건 여부에 따라 갈립니다. 현재 미체크 상태라 추가검토로 안내합니다.");
-                path.push("대수선 요건 불명 -> 추가검토");
-              }
-            } else if (action==="이전"){
-              decision = "PERMIT";
-              reason.push("이전은 여기 예외 조항에 단순 매칭되지 않습니다. 허가 쪽으로 안내합니다.");
-              path.push("이전 -> 허가 유지");
+          // 내력벽/기둥/보/지붕틀/외벽마감: add/remove는 수량 조건 없이 트리거
+          if(isAddOrRemove){
+            isMajorTrigger = true;
+            why = `증설/해체는 수량과 무관하게 대수선 트리거`;
+          } else if(isRepairOrChange){
+            if(Number.isFinite(num) && num >= it.threshold){
+              isMajorTrigger = true;
+              why = `${it.threshold}${it.metricType==="area"?"㎡":"개"} 이상 ${action==="repair"?"수선":"변경"}`;
+            } else {
+              // 기준 미달이면 대수선 트리거 아님(이 항목만으로는)
+              isMajorTrigger = false;
+              why = `기준 미달(입력값: ${raw || "미입력"})`;
             }
-          } else {
-            path.push("200㎡/3층 미만 불충족");
           }
-        } else {
-          path.push("비도시 특수지역 아님");
         }
-      }
 
-      // 예외 4: 대통령령으로 정하는 대수선
-      if (action==="대수선" && decision !== "REPORT_IN_LIEU"){
-        path.push("예외(대통령령 대수선) 체크");
-        if (mrDecree){
-          decision = "REPORT_IN_LIEU";
-          reason.push("예외: 대통령령으로 정하는 대수선에 해당 체크됨 -> ‘신고로 허가를 갈음’ 가능 구간.");
-          path.push("대통령령 대수선 체크됨 -> 신고(허가 갈음)");
-        } else {
-          // keep decision as PERMIT or REVIEW depending earlier
-          if (decision === "PERMIT") path.push("대통령령 대수선 미체크 -> 허가 유지");
+        if(isMajorTrigger){
+          triggers.push({
+            id: it.id,
+            title: it.title,
+            action,
+            value: raw,
+            why
+          });
+
+          // (B) 신고 가능 여부 체크(시행령 제11조②)
+          // - 항목이 reportEligible(true)여야 하고
+          // - action은 반드시 repair(수선)만 허용
+          // - 해체 없음(no)이어야 함
+          if(!it.reportEligible){
+            reportCandidate = false;
+            reportViolations.push(`“${it.title}”은(는) 현재 시행령 제11조②의 신고 가능 대수선 범위에 포함되지 않습니다.`);
+          }
+          if(action !== "repair"){
+            reportCandidate = false;
+            reportViolations.push(`“${it.title}”은(는) “수선”이 아닌 공사(${ACTIONS.find(a=>a.value===action).label})가 포함되어 신고 요건에 맞지 않을 수 있습니다.`);
+          }
+          if(dismantle === "yes"){
+            reportCandidate = false;
+            reportViolations.push("주요구조부 해체가 있어 신고 요건(해체 없음)에 맞지 않습니다.");
+          }
         }
-      }
-
-      // If still REVIEW due to unknowns, keep it
-      // else, final
-      renderDecision(decision, {
-        action, isUrban, zone, gfa, floors, delta, note,
-        useFrom, useTo, mrDecree, mrNoStructure,
-        reason, path
       });
 
-      return { ok:true, missing:[], decision };
-    }
+      const isMajorRepair = triggers.length > 0;
 
-    function renderDecision(decision, ctx){
-      const bullets = [];
-      const a = ctx.action;
-      const isUrbanLabel = ctx.isUrban==="yes" ? "도시지역" : "도시지역 아님";
-      const zoneLabel = ctx.isUrban==="no" ? (ctx.zone || "미입력") : "-";
-      const gfaLabel = (ctx.gfa!=null) ? `${ctx.gfa}㎡` : "미입력";
-      const floorsLabel = (ctx.floors!=null) ? `${ctx.floors}층` : "미입력";
+      // 신고 후보인데, 트리거가 하나도 없으면 의미없음
+      if(!isMajorRepair) reportCandidate = false;
 
-      bullets.push(`행위: ${a}`);
-      bullets.push(`입지: ${isUrbanLabel} / (도시지역 아님인 경우) ${zoneLabel}`);
-      if (a !== "용도변경"){
-        bullets.push(`규모: 연면적 ${gfaLabel}, 층수 ${floorsLabel}`);
-        if (["증축","개축","재축"].includes(a)){
-          bullets.push(`증가 연면적 합계: ${ctx.delta!=null ? ctx.delta+"㎡" : "미입력"}`);
-        }
-        if (a==="대수선"){
-          bullets.push(`대수선 체크: 대통령령 대수선=${ctx.mrDecree ? "예" : "아니오"}, 주요구조부 해체 없음 등=${ctx.mrNoStructure ? "예" : "아니오"}`);
-        }
-      } else {
-        const fromLabel = USE_CATEGORIES.find(x=>x[0]===ctx.useFrom)?.[1] || "미입력";
-        const toLabel = USE_CATEGORIES.find(x=>x[0]===ctx.useTo)?.[1] || "미입력";
-        bullets.push(`용도변경: ${fromLabel} → ${toLabel}`);
-      }
-      if (ctx.note) bullets.push(`메모: ${ctx.note}`);
-
-      let status="warn", title="🟡 추가검토", short="정보가 더 필요합니다.", why=ctx.reason.join(" ");
-      if (decision==="PERMIT"){
-        status="bad";
-        title="🔴 허가 쪽으로 안내";
-        short="원칙 또는 예외 불충족으로 허가 루트가 유력합니다.";
-      } else if (decision==="REPORT_IN_LIEU"){
-        status="ok";
-        title="🟢 신고(허가 갈음) 쪽으로 안내";
-        short="제14조 예외조건에 걸려 ‘신고로 허가를 갈음’ 가능 구간입니다.";
-      } else if (decision==="REVIEW"){
-        status="warn";
-        title="🟡 추가검토 필요";
-        short="핵심 입력은 있으나, 대통령령/세부용도/요건에 따라 갈립니다.";
+      // 신고 후보일 때도 숫자요건 체크(내력벽/기둥/보/지붕틀은 '수선' + 기준치 필요)
+      if(reportCandidate){
+        // triggers에 있는 항목만 보면 됨
+        triggers.forEach(t => {
+          const it = MAJOR_REPAIR_ITEMS.find(x => x.id === t.id);
+          if(!it) return;
+          if(it.metricType === "area" || it.metricType === "count"){
+            const n = toNumber(t.value);
+            if(!Number.isFinite(n) || n < it.threshold){
+              reportCandidate = false;
+              reportViolations.push(`“${it.title}” 수선은 ${it.threshold}${it.metricType==="area"?"㎡":"개"} 이상이어야 신고 범위로 보기 어렵습니다.`);
+            }
+          }
+        });
       }
 
-      // show path in bullets as last item
-      bullets.push("의사결정 경로: " + ctx.path.join(" → "));
-
-      renderResult({ status, title, short, why, bullets, path: ctx.path });
+      return {
+        isMajorRepair,
+        reportCandidate,
+        triggers,
+        reportViolations: Array.from(new Set(reportViolations))
+      };
     }
 
-    function renderResult({status, title, short, why, bullets}){
-      const pill = $("resultPill");
-      pill.classList.remove("ok","warn","bad");
-      pill.classList.add(status);
-      pill.textContent = title;
+    /***********************
+     * 5) Render result + right summary
+     ************************/
+    const kpiUse = document.getElementById("kpiUse");
+    const kpiDismantle = document.getElementById("kpiDismantle");
+    const kpiList = document.getElementById("kpiList");
 
-      $("resultShort").textContent = short || "";
-      $("resultWhy").textContent = why || "";
+    function renderRight(){
+      kpiUse.textContent = state.useMain ? state.useMain : "미입력";
+      const d = state.hasDismantle;
+      kpiDismantle.textContent =
+        d === "no" ? "해체 없음" :
+        d === "yes" ? "해체 있음" : "불확실";
 
-      const ul = $("resultBullets");
-      ul.innerHTML = "";
-      (bullets || []).forEach(b=>{
+      const { triggers } = evaluate();
+      kpiList.innerHTML = "";
+      if(triggers.length === 0){
         const li = document.createElement("li");
-        li.textContent = b;
-        ul.appendChild(li);
-      });
-
-      // progress Step5 text
-      $("p5t").textContent = title + " | " + short;
-    }
-
-    function makeSummaryText(){
-      const action = getAction();
-      const isUrban = $("isUrban").value;
-      const zone = $("zone").value;
-      const gfa = $("gfa").value;
-      const floors = $("floors").value;
-      const delta = $("delta").value;
-      const mrDecree = $("mrDecree").checked;
-      const mrNoStructure = $("mrNoStructure").checked;
-      const note = ($("note").value || "").trim();
-
-      const useFrom = $("useFrom").value;
-      const useTo = $("useTo").value;
-      const fromLabel = USE_CATEGORIES.find(x=>x[0]===useFrom)?.[1] || "";
-      const toLabel = USE_CATEGORIES.find(x=>x[0]===useTo)?.[1] || "";
-
-      const pillText = $("resultPill").textContent;
-      const short = $("resultShort").textContent;
-      const bullets = Array.from($("resultBullets").querySelectorAll("li")).map(li=>" - " + li.textContent).join("\n");
-
-      return [
-        "건축허가/신고 빠른판정 요약",
-        "--------------------------------",
-        `결과: ${pillText}`,
-        `한줄요약: ${short}`,
-        "",
-        "[입력값]",
-        `행위: ${action || "미선택"}`,
-        `도시지역: ${isUrban || "미선택"}`,
-        `세부지역(도시지역 아님인 경우): ${zone || "-"}`,
-        `연면적(m²): ${gfa || "-"}`,
-        `층수(지하 제외): ${floors || "-"}`,
-        `증가 연면적 합계(m²): ${delta || "-"}`,
-        `대수선 체크(대통령령): ${mrDecree ? "예" : "아니오"}`,
-        `대수선 체크(주요구조부 해체 없음 등): ${mrNoStructure ? "예" : "아니오"}`,
-        `용도변경: ${fromLabel ? fromLabel : "-"} → ${toLabel ? toLabel : "-"}`,
-        `메모: ${note || "-"}`,
-        "",
-        "[근거/경로]",
-        bullets,
-        "",
-        "주의: 본 도구는 참고용입니다. 최종 판단은 관할청 및 법령/조례/대통령령 세부기준을 확인하세요."
-      ].join("\n");
-    }
-
-    function resetAll(){
-      // radios
-      document.querySelectorAll('input[name="action"]').forEach(r=>r.checked=false);
-
-      $("isUrban").value = "";
-      $("zone").value = "";
-      $("gfa").value = "";
-      $("floors").value = "";
-      $("delta").value = "";
-      $("note").value = "";
-      $("mrDecree").checked = false;
-      $("mrNoStructure").checked = false;
-      $("useFrom").value = "";
-      $("useTo").value = "";
-
-      refreshVisibility();
-      updateProgress(["행위 선택"]);
-      renderResult({
-        status:"warn",
-        title:"🟡 입력 대기",
-        short:"행위를 선택하고 필요한 입력을 채워주세요.",
-        why:"원칙(허가)에서 출발해 예외(신고로 허가 갈음)를 순서대로 체크합니다.",
-        bullets:["초기화되었습니다. 다시 시작해 주세요."]
+        li.textContent = "아직 대수선 트리거 항목이 없습니다.";
+        li.style.color = "rgba(156,163,175,.95)";
+        kpiList.appendChild(li);
+        return;
+      }
+      triggers.forEach(t => {
+        const li = document.createElement("li");
+        const val = (t.value && String(t.value).trim()) ? ` / 입력: ${t.value}` : "";
+        li.textContent = `${t.title} - ${ACTIONS.find(a=>a.value===t.action).label}${val}`;
+        kpiList.appendChild(li);
       });
     }
 
-    // ====== Events ======
-    document.addEventListener("change", (e)=>{
-      refreshVisibility();
-      // live judge for user friendliness
-      judge();
-    });
+    const resultBox = document.getElementById("resultBox");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultSub = document.getElementById("resultSub");
+    const resultDetail = document.getElementById("resultDetail");
+    const copyText = document.getElementById("copyText");
 
-    $("btnJudge").addEventListener("click", ()=>{
-      judge();
-      toast("판정 업데이트!");
-    });
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
 
-    $("btnCopy").addEventListener("click", async ()=>{
-      // ensure latest
-      judge();
-      const text = makeSummaryText();
+    function evaluateAndRender(){
+      const r = evaluate();
+      const use = state.useMain || "(미입력)";
+      const addr = state.addr || "(미입력)";
+      const memo = state.memo || "";
+      const dismantle = state.hasDismantle;
+
+      // 결과 박스 스타일
+      resultBox.classList.remove("good","warn","bad");
+
+      if(!r.isMajorRepair){
+        resultBox.classList.add("warn");
+        resultTitle.textContent = "판정: 현재 입력만으로는 “대수선(시행령 제3조의2)” 트리거가 없습니다.";
+        resultSub.textContent =
+          "즉, 대수선(허가/신고) 로직으로는 ‘비해당’입니다. 다만 증축·개축·용도변경·대수선 외 인허가 이슈는 별도로 검토가 필요할 수 있어요.";
+        resultDetail.innerHTML = `
+          <ul>
+            <li>대수선 트리거 항목(내력벽/기둥/보/지붕틀/방화구획/계단/세대경계벽/외벽마감)이 “기준치 이상”으로 체크되지 않았습니다.</li>
+            <li>공사 범위를 더 정확히 체크하면 결과가 바뀔 수 있습니다.</li>
+          </ul>
+        `;
+        copyText.textContent =
+`[대수선 허가/신고 판정 요약]
+- 소재지: ${addr}
+- 용도: ${use}
+- 주요구조부 해체: ${dismantle}
+- 현재 체크 기준: 대수선 트리거 없음(시행령 제3조의2 기준)
+- 결론: 대수선(허가/신고) 대상은 아닌 것으로 보임(입력 기준)
+- 메모: ${memo}`.trim();
+
+        return;
+      }
+
+      // 대수선은 맞음
+      if(r.reportCandidate){
+        resultBox.classList.add("good");
+        resultTitle.textContent = "판정: 대수선 ‘신고’ 가능성이 높습니다. (건축신고로 갈음)";
+        resultSub.textContent =
+          "입력된 공사는 ‘수선’ 중심이며, 시행령 제11조②의 신고 가능 대수선 범위에 들어옵니다.";
+      } else {
+        // permit likely
+        resultBox.classList.add("bad");
+        resultTitle.textContent = "판정: 대수선 ‘허가’ 검토가 필요합니다. (신고 요건을 벗어남)";
+        resultSub.textContent =
+          "대수선 트리거는 맞지만, ‘신고로 가능한 대수선’ 요건(시행령 제11조②)을 충족하지 못할 수 있습니다.";
+      }
+
+      const triggerLines = r.triggers.map(t => {
+        const val = (t.value && String(t.value).trim()) ? ` (입력: ${escapeHtml(t.value)})` : "";
+        return `<li><b>${escapeHtml(t.title)}</b> - ${escapeHtml(ACTIONS.find(a=>a.value===t.action).label)}${val}<br/><span style="color:rgba(156,163,175,.95);font-size:12px">${escapeHtml(t.why)}</span></li>`;
+      }).join("");
+
+      const blockLines = (r.reportViolations.length ? r.reportViolations.map(v => `<li>${escapeHtml(v)}</li>`).join("") : "");
+
+      resultDetail.innerHTML = `
+        <div class="hint">
+          <b>대수선 트리거(입력 기반)</b>
+          <ul>${triggerLines}</ul>
+        </div>
+        <div class="hr"></div>
+        <div class="hint">
+          <b>신고 가능 여부 체크(막히는 이유)</b>
+          ${r.reportCandidate ? "<div class='note'>현재 입력 기준으로는 신고 요건을 크게 벗어나지 않습니다.</div>" : `<ul>${blockLines || "<li>신고 요건을 자동 산출하는 과정에서 제약이 발생했습니다.</li>"}</ul>`}
+          <div class="note">
+            ※ “수선”이 아닌 “변경/증설/해체”가 섞이면 허가 쪽으로 기웁니다.
+          </div>
+        </div>
+      `;
+
+      const conclusion = r.reportCandidate
+        ? "대수선 신고(건축신고) 가능성 높음"
+        : "대수선 허가(건축허가) 검토 필요(신고 요건 이탈)";
+
+      copyText.textContent =
+`[대수선 허가/신고 판정 요약]
+- 소재지: ${addr}
+- 용도: ${use}
+- 주요구조부 해체: ${dismantle}
+- 대수선 트리거: ${r.triggers.map(t => `${t.title}:${ACTIONS.find(a=>a.value===t.action).label}${t.value?`(${t.value})`:""}`).join(", ")}
+- 결론: ${conclusion}
+- 메모: ${memo}
+
+[주의]
+- 이 결과는 입력된 “공사 사실” 기준 자동판정입니다.
+- 현장 여건, 조례, 구조안전/방화/피난/설비 등 다른 인허가 요건은 별도 검토가 필요할 수 있습니다.`.trim();
+    }
+
+    /***********************
+     * 6) Buttons: copy/reset
+     ************************/
+    document.getElementById("btnCopy").addEventListener("click", async () => {
       try{
-        await navigator.clipboard.writeText(text);
-        toast("결과 요약 복사 완료!");
-      }catch(err){
-        // fallback
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        toast("복사 완료(대체 방식)!");
+        await navigator.clipboard.writeText(copyText.textContent);
+        alert("요약을 클립보드에 복사했어요!");
+      }catch(e){
+        alert("복사에 실패했어요. 브라우저 권한을 확인해 주세요.");
       }
     });
 
-    $("btnReset").addEventListener("click", ()=>{
-      resetAll();
-      toast("초기화 완료!");
+    document.getElementById("btnReset").addEventListener("click", () => {
+      // reset state
+      state.useMain = "";
+      state.addr = "";
+      state.memo = "";
+      state.hasDismantle = "no";
+      initWorksState();
+
+      // reset UI
+      useMainEl.value = "";
+      addrEl.value = "";
+      memoEl.value = "";
+      dismantleEl.value = "no";
+
+      // reset cards
+      MAJOR_REPAIR_ITEMS.forEach(it => {
+        const a = worksCards.querySelector(`select[data-role="action"][data-id="${it.id}"]`);
+        const v = worksCards.querySelector(`input[data-role="value"][data-id="${it.id}"]`);
+        if(a) a.value = "none";
+        if(v) v.value = "";
+      });
+
+      renderRight();
+      showStep(0);
     });
 
-    // initial
-    refreshVisibility();
-    updateProgress(["행위 선택"]);
+    /***********************
+     * 7) Initial render
+     ************************/
+    renderStepper();
+    renderRight();
+    showStep(0);
   </script>
 </body>
 </html>

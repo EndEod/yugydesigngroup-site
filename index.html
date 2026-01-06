@@ -3,1853 +3,1063 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>셀프인테리어 도면만들기</title>
-
-  <!-- 2D/입면 캡처용 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+  <title>건축허가/신고 빠른판정 도우미 (베타)</title>
+  <meta name="description" content="건축허가 vs 건축신고(허가 갈음) 판단을 위한 입력형 체크리스트. GitHub Pages용 단일 index.html"/>
   <style>
     :root{
-      --bg:#f2f2f2;
-      --panel:#ffffff;
-      --ink:#222;
-      --muted:#666;
-      --line:#e7e7e7;
-      --btn:#1f2937;
-      --btn2:#2563eb;
-      --danger:#dc2626;
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --brand:#2563eb;
       --ok:#16a34a;
-      --radius:14px;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --shadow: 0 10px 28px rgba(0,0,0,.08);
+      --radius:16px;
+      --radius2:22px;
     }
-    body{ margin:0; overflow:hidden; font-family:"Segoe UI","Malgun Gothic",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
-    button{ font:inherit; cursor:pointer; }
-    a{ color:inherit; }
-
-    /* ✅ 왼쪽 패널 */
-    #ui{
-      position:fixed; left:12px; top:12px; z-index:1000;
-      width:360px; max-height:92vh; overflow:auto;
-      background:rgba(255,255,255,.97);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:0 10px 30px rgba(0,0,0,.12);
-      padding:12px;
-
-      transition: transform 220ms ease;
-      will-change: transform;
-      --uiHide: 390px; /* JS로 실제 폭 계산해서 덮어씀 */
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Malgun Gothic", Apple SD Gothic Neo, "Noto Sans KR", sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.10), transparent 55%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(22,163,74,.10), transparent 55%),
+                  var(--bg);
+      color:var(--ink);
     }
-    #ui.collapsed{ transform: translateX(calc(-1 * var(--uiHide))); }
-
-    #ui::-webkit-scrollbar{ width:6px; }
-    #ui::-webkit-scrollbar-thumb{ background:#cfcfcf; border-radius:10px; }
-
-    /* ✅ 패널 토글 버튼 (항상 보이게) */
-    .uiToggle{
-      position: fixed;
-      left: 12px;
-      top: 76px;
-      z-index: 2001;
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.96);
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
-      font-weight: 900;
-      cursor: pointer;
+    header{
+      padding:28px 18px 6px;
+      max-width:1200px;
+      margin:0 auto;
     }
-    .uiToggle:hover{ background:#f6f6f6; }
-
-    .topRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .title{ font-weight:800; font-size:16px; display:flex; align-items:center; gap:8px; }
-    .ver{ font-size:11px; padding:2px 6px; border-radius:6px; background:#111827; color:#fff; }
-
-    .topBtns{ display:flex; gap:6px; }
-    .miniBtn{
-      border:1px solid var(--line); background:#fff; color:var(--ink);
-      padding:7px 9px; border-radius:10px; font-size:12px;
+    .title{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
     }
-    .miniBtn:hover{ background:#f6f6f6; }
-    .miniBtn.danger{ border-color:#ffd1d1; color:var(--danger); }
-    .miniBtn.primary{ border-color:#c7ddff; color:#1d4ed8; }
-
-    .modeRow{ margin-top:10px; display:flex; gap:8px; }
-    .modeBtn{
-      flex:1; border:none; border-radius:12px; padding:10px 0;
-      background:#e9e9e9; color:#666; font-weight:900;
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(37,99,235,.10);
+      color:#1d4ed8;
+      font-weight:700;
+      font-size:13px;
     }
-    .modeBtn.active{ background:var(--btn); color:#fff; }
-
-    .block{ margin-top:10px; border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
-    .hint{ font-size:12px; color:var(--muted); line-height:1.5; }
-
-    input[type=number]{
-      width:100%;
-      box-sizing:border-box;
-      padding:10px;
-      border:1px solid #d8d8d8;
-      border-radius:12px;
-      font-size:12px;
-      outline:none;
+    h1{
+      margin:0;
+      font-size:24px;
+      letter-spacing:-.2px;
     }
-    input[type=number]:focus{ border-color:#a7c7ff; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
-
-    textarea{
-      width:100%; height:170px; box-sizing:border-box;
-      margin-top:8px;
-      border:1px solid #d8d8d8; border-radius:12px;
-      padding:10px; font-size:12px; resize:vertical;
-      user-select:text;
-    }
-    .rowBtns{ display:flex; gap:8px; margin-top:8px; }
-    .rowBtns button{ flex:1; }
-
-    #buildBtn{
-      width:100%; margin-top:10px;
-      border:none; border-radius:12px;
-      padding:12px 0; font-weight:900; font-size:14px;
-      background:var(--btn2); color:#fff;
-    }
-    #buildBtn:hover{ filter:brightness(0.95); }
-
-    #status{
-      margin-top:10px; font-size:12px; line-height:1.45;
+    .sub{
+      margin:10px 0 0;
       color:var(--muted);
-      background:#f8fafc; border:1px solid #eef2ff;
-      padding:10px; border-radius:12px;
+      line-height:1.5;
+      font-size:14px;
+      max-width:980px;
     }
-    #status b{ color:var(--ink); }
-    .ok{ color:var(--ok); font-weight:900; }
-    .bad{ color:var(--danger); font-weight:900; }
-
-    details{ margin-top:10px; }
-    summary{
-      cursor:pointer; font-weight:900; font-size:13px;
-      list-style:none;
-    }
-    summary::-webkit-details-marker{ display:none; }
-    .detailsBody{
-      margin-top:8px; font-size:12px; color:var(--muted); line-height:1.6;
-      border:1px dashed #e5e7eb; border-radius:12px; padding:10px; background:#fafafa;
-    }
-    kbd{ background:#fff; border:1px solid #ddd; padding:1px 6px; border-radius:6px; font-family:monospace; font-weight:900; }
-
-    /* ✅ 체크박스(새로고침 자동 초기화) */
-    .chkRow{ display:flex; gap:8px; align-items:center; margin-top:10px; }
-    .chkRow input{ width:16px; height:16px; }
-    .chkRow label{ font-size:12px; color:#444; font-weight:800; user-select:none; }
-
-    /* Viewer */
-    #viewer{ position:fixed; inset:0; z-index:1; }
-
-    #twod{ position:absolute; inset:0; overflow:auto; display:none; background:#fff;
-      background-image: linear-gradient(#eee 1px, transparent 1px), linear-gradient(90deg, #eee 1px, transparent 1px);
-      background-size:40px 40px;
-    }
-    #three{ position:absolute; inset:0; display:block; }
-    #elev{ position:absolute; inset:0; overflow:auto; display:none; background:#fff;
-      background-image: linear-gradient(#f0f0f0 1px, transparent 1px), linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
-      background-size:40px 40px;
-      padding:18px 18px 80px 18px;
-      box-sizing:border-box;
-    }
-
-    .room2d{
-      position:absolute; border:2px solid #666; box-shadow:2px 2px 6px rgba(0,0,0,.12);
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      font-size:12px; padding:6px; cursor:grab; user-select:none; touch-action:none;
-    }
-    .room2d.dragging{ cursor:grabbing; opacity:.85; z-index:999; box-shadow:6px 6px 16px rgba(0,0,0,.18); }
-
-    /* 입면 카드 */
-    .elevHeader{
-      position:sticky; top:0; z-index:5;
-      background:rgba(255,255,255,.92);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
-      box-shadow:0 6px 18px rgba(0,0,0,.08);
-      backdrop-filter: blur(6px);
-      margin-bottom:14px;
-    }
-    .elevGrid{
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:14px 18px 34px;
       display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-      gap:14px;
+      grid-template-columns: 1.35fr .65fr;
+      gap:16px;
     }
-    .elevCard{
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr}
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius2);
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:16px;
+      letter-spacing:-.2px;
+    }
+    .hint{
+      margin:0 0 12px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    @media (max-width: 620px){ .grid2{grid-template-columns:1fr} }
+
+    .tiles{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 980px){ .tiles{grid-template-columns: repeat(2, 1fr);} }
+    .tile{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 12px 10px;
+      cursor:pointer;
       background:#fff;
+      transition: transform .06s ease, border-color .06s ease, box-shadow .06s ease;
+      user-select:none;
+      min-height:74px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .tile:hover{ transform: translateY(-1px); box-shadow: 0 10px 18px rgba(0,0,0,.06); }
+    .tile .k{font-weight:800; font-size:15px;}
+    .tile .d{color:var(--muted); font-size:12px; line-height:1.35}
+    input[type="radio"]{display:none}
+    input[type="radio"]:checked + .tile{
+      border-color: rgba(37,99,235,.65);
+      box-shadow: 0 10px 22px rgba(37,99,235,.14);
+      background: linear-gradient(180deg, rgba(37,99,235,.08), rgba(37,99,235,.02));
+    }
+
+    label.row{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:10px 12px;
       border:1px solid var(--line);
       border-radius:14px;
-      padding:12px;
-      box-shadow:0 10px 22px rgba(0,0,0,.07);
+      background:#fff;
     }
-    .elevTitle{ font-weight:900; font-size:14px; margin-bottom:8px; }
-    .elevMeta{ font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.4; }
-    .wallRow{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .wallBox{
-      border:1px solid #e5e7eb;
+    .row input[type="checkbox"]{ margin-top:3px; transform: scale(1.15); }
+    .row .rt{display:flex; flex-direction:column; gap:4px;}
+    .row .rt b{font-size:14px}
+    .row .rt span{color:var(--muted); font-size:12.5px; line-height:1.45}
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+    .field label{font-size:12px; color:var(--muted);}
+    .field input, .field select{
+      width:100%;
+      border:1px solid var(--line);
       border-radius:12px;
-      padding:10px;
-      background:#fafafa;
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+      background:#fff;
     }
-    .wallLabel{ font-weight:900; font-size:12px; margin-bottom:6px; color:#111; }
-    .wallSvgWrap{ width:100%; overflow:hidden; cursor:pointer; }
-    .warn{ margin-top:8px; font-size:12px; color:var(--danger); font-weight:900; }
-    .good{ margin-top:8px; font-size:12px; color:var(--ok); font-weight:900; }
-    .note{ margin-top:8px; font-size:12px; color:#374151; font-weight:900; }
+    .field input:focus, .field select:focus{
+      border-color: rgba(37,99,235,.6);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
 
-    /* Tooltip (3D) */
-    #tooltip{
-      position:fixed; display:none; z-index:9999; pointer-events:none;
-      background:rgba(17,24,39,.95); color:#fff;
-      padding:10px 12px; border-radius:12px;
-      font-size:12px; line-height:1.55;
-      box-shadow:0 18px 50px rgba(0,0,0,.35);
-      min-width:260px;
-      border:1px solid rgba(255,255,255,.12);
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
     }
-    #tooltip b{ display:block; font-size:13px; margin-bottom:6px; color:#fde68a; }
-    .ttRow{ display:flex; justify-content:space-between; gap:12px; }
-    .ttLbl{ color:#cbd5e1; }
-    .ttVal{ font-weight:900; }
+    button{
+      border:0;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:800;
+      cursor:pointer;
+      background:var(--brand);
+      color:#fff;
+      box-shadow: 0 10px 18px rgba(37,99,235,.20);
+    }
+    button.secondary{
+      background:#111827;
+      box-shadow: 0 10px 18px rgba(17,24,39,.18);
+    }
+    button.ghost{
+      background:#fff;
+      color:#111827;
+      border:1px solid var(--line);
+      box-shadow:none;
+    }
+    button:active{ transform: translateY(1px); }
 
-    /* ✅ 줌 HUD (2D/입면) */
-    #zoomHud{
-      position: fixed;
-      right: 12px;
-      bottom: 12px;
-      z-index: 1600;
-      display: none;
-      gap: 6px;
-      align-items: center;
-      background: rgba(255,255,255,.94);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 8px 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
-      user-select:none;
+    .result{
+      border-radius:18px;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.65));
+      padding:14px;
     }
-    #zoomHud button{
-      width: 34px; height: 34px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: #fff;
-      font-weight: 900;
-      cursor: pointer;
+    .big{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:8px;
     }
-    #zoomHud button:hover{ background:#f6f6f6; }
-    #zoomLabel{
-      font-size: 12px;
-      font-weight: 900;
-      min-width: 64px;
-      text-align: center;
-      color:#111;
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      font-weight:900;
+      letter-spacing:-.1px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:14px;
+    }
+    .pill.ok{ color: #065f46; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08); }
+    .pill.warn{ color: #92400e; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10); }
+    .pill.bad{ color: #7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.10); }
+
+    .why{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+    }
+    .list{
+      margin:10px 0 0;
+      padding-left:18px;
+      color:#111827;
+      font-size:13px;
+      line-height:1.6;
+    }
+    .list li{ margin:4px 0; }
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px; color:var(--muted); line-height:1.5}
+
+    .progress{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .step{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .step .top{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .step b{font-size:14px}
+    .chip{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .chip.done{ color:#065f46; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08); }
+    .chip.todo{ color:#92400e; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10); }
+    .chip.block{ color:#7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.10); }
+    .step p{margin:8px 0 0; color:var(--muted); font-size:12.5px; line-height:1.55}
+
+    .foot{
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed var(--line);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+
+    .hide{display:none !important;}
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background:#111827;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:13px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.22);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-2px);
+    }
+    .split{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
     }
   </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 
 <body>
-  <div id="tooltip"></div>
-
-  <!-- ✅ 줌 HUD -->
-  <div id="zoomHud" aria-label="Zoom controls">
-    <button id="zoomOut" title="축소">−</button>
-    <span id="zoomLabel">100%</span>
-    <button id="zoomIn" title="확대">＋</button>
-    <button id="zoomReset" title="100%">⟲</button>
-  </div>
-
-  <!-- ✅ 메뉴 접기/펼치기 버튼 -->
-  <button id="uiToggle" class="uiToggle" title="메뉴 접기">◀</button>
-
-  <div id="ui">
-    <div class="topRow">
-      <div class="title">뚱뚜루의 도면소생술 <span class="ver">v2.41</span></div>
-      <div class="topBtns">
-        <button id="resetBtn" class="miniBtn danger">초기화</button>
-        <button id="jsonLoadBtn" class="miniBtn">JSON 불러오기</button>
-        <button id="jsonSaveBtn" class="miniBtn primary">JSON 저장</button>
-        <input id="jsonFile" type="file" accept="application/json" style="display:none" />
-      </div>
+  <header>
+    <div class="title">
+      <span class="badge">🧭 의사결정 진행상황이 보이는 버전</span>
+      <h1>건축허가 vs 건축신고(허가 갈음) 빠른판정 도우미</h1>
     </div>
+    <p class="sub">
+      이 페이지는 “허가인지, 신고(허가 갈음)인지, 추가검토인지”를 <b>입력만으로</b> 빠르게 정리해주는 체크리스트형 도구입니다.<br/>
+      ⚠️ 최종 판단은 관할 허가권자(구청 등)와 법령/조례/대통령령 세부기준에 따라 달라질 수 있어요.
+    </p>
+  </header>
 
-    <div class="modeRow">
-      <button id="mode2d" class="modeBtn">📊 2D</button>
-      <button id="mode3d" class="modeBtn active">🧊 3D</button>
-      <button id="modeElev" class="modeBtn">🧱 입면</button>
-    </div>
+  <main class="wrap">
+    <!-- LEFT: Inputs + Result -->
+    <section class="split">
+      <div class="card">
+        <h2>1) 무엇을 하시나요? (행위 선택)</h2>
+        <p class="hint">가장 먼저 “행위”를 고르면, 아래 입력칸이 자동으로 필요한 것만 보여요.</p>
 
-    <div class="block">
-      <div class="hint">
-        <b>딱 2단계만 하세요.</b><br/>
-        1) 아래 칸에 “방 목록” 붙여넣기<br/>
-        2) <b>[도면 생성]</b> 누르기
-      </div>
+        <div class="tiles" id="actionTiles">
+          <label>
+            <input type="radio" name="action" value="신축">
+            <div class="tile">
+              <div class="k">신축</div>
+              <div class="d">새로 짓기</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="증축">
+            <div class="tile">
+              <div class="k">증축</div>
+              <div class="d">면적 증가</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="개축">
+            <div class="tile">
+              <div class="k">개축</div>
+              <div class="d">전부/일부를 철거 후 새로</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="재축">
+            <div class="tile">
+              <div class="k">재축</div>
+              <div class="d">멸실 후 다시</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="이전">
+            <div class="tile">
+              <div class="k">이전</div>
+              <div class="d">옮겨 짓기</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="대수선">
+            <div class="tile">
+              <div class="k">대수선</div>
+              <div class="d">주요구조부 관련 수선 등</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="용도변경">
+            <div class="tile">
+              <div class="k">용도변경</div>
+              <div class="d">별표1 용도 변경</div>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="action" value="기타">
+            <div class="tile">
+              <div class="k">기타</div>
+              <div class="d">아직 모르겠음</div>
+            </div>
+          </label>
+        </div>
 
-      <!-- ✅ 새로고침 자동 초기화 옵션 -->
-      <div class="chkRow">
-        <input id="autoClear" type="checkbox" checked />
-        <label for="autoClear">새로고침(F5)하면 입력/도형 자동 초기화</label>
-      </div>
+        <div style="height:10px"></div>
 
-      <!-- 벽두께 입력 (기본 200mm) -->
-      <div style="margin-top:10px;">
-        <div style="font-size:12px;font-weight:900;color:#111;">벽두께(mm) <span style="font-weight:700;color:#666;">(기본 200, 비워도 자동 200)</span></div>
-        <input id="wallThk" type="number" value="200" min="50" max="500" step="10" />
-        <div class="hint" style="margin-top:6px;">
-          · 200처럼 큰 값은 <b>mm</b>로 보고 0.2m로 변환합니다.<br/>
-          · 0.2처럼 작은 값은 <b>m</b>로 봅니다.
+        <h2>2) 어디인가요? (입지)</h2>
+        <p class="hint">도시지역 여부와 “도시지역이 아닌 경우”의 세부 지역(관리/농림/자연환경보전)이 중요해요.</p>
+
+        <div class="grid2">
+          <div class="field">
+            <label for="isUrban">도시지역인가요?</label>
+            <select id="isUrban">
+              <option value="">선택</option>
+              <option value="yes">예, 도시지역</option>
+              <option value="no">아니오, 도시지역 아님</option>
+            </select>
+          </div>
+
+          <div class="field" id="zoneWrap">
+            <label for="zone">도시지역이 아니라면, 어디인가요?</label>
+            <select id="zone">
+              <option value="">선택</option>
+              <option value="관리지역">관리지역</option>
+              <option value="농림지역">농림지역</option>
+              <option value="자연환경보전지역">자연환경보전지역</option>
+              <option value="기타">그 외(도시지역 아님)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <h2>3) 규모 입력 (면적/층수)</h2>
+        <p class="hint">필요한 칸만 채우면 돼요. 모르면 빈칸으로 두고 “추가검토”로 돌려도 됩니다.</p>
+
+        <div class="grid2">
+          <div class="field" id="gfaWrap">
+            <label for="gfa">연면적(m²)</label>
+            <input id="gfa" type="number" inputmode="decimal" min="0" step="0.01" placeholder="예: 180">
+          </div>
+          <div class="field" id="floorsWrap">
+            <label for="floors">주택으로 쓰는 층수(지하 제외 기준으로 입력)</label>
+            <input id="floors" type="number" inputmode="numeric" min="0" step="1" placeholder="예: 2">
+          </div>
+          <div class="field hide" id="deltaWrap">
+            <label for="delta">증가 연면적 합계(m²) (증축/개축/재축 판단용)</label>
+            <input id="delta" type="number" inputmode="decimal" min="0" step="0.01" placeholder="예: 60">
+          </div>
+          <div class="field">
+            <label for="note">메모(선택)</label>
+            <input id="note" type="text" placeholder="예: 1층 일부 필로티 주차장">
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div id="majorRepairCard" class="hide">
+          <h2>4) 대수선 추가 질문</h2>
+          <p class="hint">대수선은 대통령령 요건 등 “체크박스”로 갈라지는 구간이 있어요. 몰라도 괜찮아요.</p>
+
+          <div class="grid2">
+            <label class="row">
+              <input type="checkbox" id="mrDecree">
+              <div class="rt">
+                <b>대통령령으로 정하는 대수선에 해당</b>
+                <span>예: 법령에서 지정한 유형의 대수선(세부기준은 별도 확인)</span>
+              </div>
+            </label>
+            <label class="row">
+              <input type="checkbox" id="mrNoStructure">
+              <div class="rt">
+                <b>주요구조부 해체 없음 등 요건 충족</b>
+                <span>“도시지역이 아닌 관리/농림/자연환경보전 + 연면적 200 미만 + 3층 미만”일 때 중요</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="tiny" style="margin-top:8px">
+            ※ 여기 체크는 “판정 로직”에 반영되지만, 실제 적용은 현장 조건과 법령 해석에 따라 달라질 수 있습니다.
+          </div>
+        </div>
+
+        <div id="useChangeCard" class="hide" style="margin-top:10px">
+          <h2>5) 용도변경 입력 (별표1 대분류 기준)</h2>
+          <p class="hint">지금은 “대분류가 달라지면 허가 가능성 높음” 수준의 1차 스크리닝입니다. (시설군 테이블은 추후 업데이트)</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="useFrom">변경 전 용도(대분류)</label>
+              <select id="useFrom"></select>
+            </div>
+            <div class="field">
+              <label for="useTo">변경 후 용도(대분류)</label>
+              <select id="useTo"></select>
+            </div>
+          </div>
+
+          <div class="tiny" style="margin-top:8px">
+            팁: 주택(단독/공동)은 대분류가 같아도 세부(다중/다가구/다세대/연립/아파트)에서 규정이 달라질 수 있어요.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btnJudge" type="button">판정하기</button>
+          <button id="btnCopy" type="button" class="ghost">결과 요약 복사</button>
+          <button id="btnReset" type="button" class="secondary">초기화</button>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="result" id="resultBox">
+          <div class="big">
+            <div class="pill warn" id="resultPill">🟡 입력 대기</div>
+            <div class="tiny muted" id="resultShort">행위를 선택하고 필요한 입력을 채워주세요.</div>
+          </div>
+
+          <p class="why" id="resultWhy">
+            이 도구는 “원칙(허가)”에서 시작해서 “예외(신고로 허가 갈음)” 조건을 순서대로 체크합니다.
+          </p>
+
+          <ul class="list" id="resultBullets">
+            <li class="muted">아직 판정 전입니다.</li>
+          </ul>
+
+          <div class="foot">
+            <b>주의</b>: 이 페이지는 상담용 “빠른 정리” 도구입니다. 건축법 외에도 조례, 지구단위계획, 각종 개별법(소방법 등) 영향이 있을 수 있어요.
+          </div>
         </div>
       </div>
+    </section>
 
-      <textarea id="dataInput" placeholder="✅ 제일 쉬운 입력(헤더 없어도 됨)
-거실 5.0 4.0
-방1 2.4 2.4
+    <!-- RIGHT: Progress -->
+    <aside class="card">
+      <h2>🧭 의사결정 진행상황</h2>
+      <p class="hint">여기만 보면 “지금 어디까지 입력했는지”와 “어떤 규칙에 걸렸는지”가 보여요.</p>
 
-✅ 엑셀/구글시트 표 통째로 복사도 OK
-공간ID	공간명	가로(m)	세로(m)	벽높이(m)	창면적(㎡)
+      <div class="progress">
+        <div class="step" id="p1">
+          <div class="top">
+            <b>Step 1. 행위 선택</b>
+            <span class="chip todo" id="p1c">입력 필요</span>
+          </div>
+          <p id="p1t">신축/증축/개축/재축/이전/대수선/용도변경 중 하나를 고르세요.</p>
+        </div>
 
-✅ 창을 '그림(진짜 창)'으로 넣고 싶으면
-[입면] 모드에서 벽 카드의 [ + 창 ]을 눌러서
-가로/세로만 입력하세요 (기본: 중앙 + sill 0.9m)"></textarea>
+        <div class="step" id="p2">
+          <div class="top">
+            <b>Step 2. 입지 입력</b>
+            <span class="chip todo" id="p2c">입력 필요</span>
+          </div>
+          <p id="p2t">도시지역 여부를 선택하고, 도시지역이 아니라면 세부 지역을 고르세요.</p>
+        </div>
 
-      <div class="rowBtns">
-        <button id="pasteBtn" class="miniBtn">📋 클립보드 불러오기</button>
-        <button id="sampleBtn" class="miniBtn">🧪 샘플 넣기</button>
-        <button id="clearInputBtn" class="miniBtn">🧽 입력 지우기</button>
+        <div class="step" id="p3">
+          <div class="top">
+            <b>Step 3. 규모 입력</b>
+            <span class="chip todo" id="p3c">입력 필요</span>
+          </div>
+          <p id="p3t">연면적, 층수, (증축/개축/재축이면) 증가 연면적을 입력하세요.</p>
+        </div>
+
+        <div class="step" id="p4">
+          <div class="top">
+            <b>Step 4. 예외조건 체크</b>
+            <span class="chip todo" id="p4c">진행 중</span>
+          </div>
+          <p id="p4t">원칙은 허가입니다. 예외(신고로 허가 갈음)에 해당하면 결과가 바뀝니다.</p>
+        </div>
+
+        <div class="step" id="p5">
+          <div class="top">
+            <b>Step 5. 결과</b>
+            <span class="chip todo" id="p5c">대기</span>
+          </div>
+          <p id="p5t">“허가 / 신고(허가 갈음) / 추가검토” 중 하나로 안내됩니다.</p>
+        </div>
       </div>
 
-      <button id="buildBtn">🏗️ 도면 생성</button>
-
-      <div id="status">
-        <b>상태</b><br/>
-        아직 데이터가 없습니다. 위 칸에 붙여넣고 [도면 생성]을 눌러주세요.
+      <div class="foot">
+        <b>사용 팁</b><br/>
+        1) 모르면 빈칸으로 두고 “판정하기” 누르세요. 그럼 “추가검토”로 안전하게 빠집니다.<br/>
+        2) “결과 요약 복사” 누르면 카톡/메모장으로 바로 붙여넣기 됩니다.
       </div>
+    </aside>
+  </main>
 
-      <details>
-        <summary>사용법 (30초)</summary>
-        <div class="detailsBody">
-          1) 엑셀/구글시트에서 <b>방 목록 표</b>를 드래그해서 복사<br/>
-          2) 이 페이지에 붙여넣기<br/>
-          3) <b>[도면 생성]</b><br/><br/>
-          - 2D: 방 조각 드래그로 배치 (휠로 확대/축소, <kbd>Shift</kbd>+휠은 스크롤)<br/>
-          - 3D: <kbd>Shift</kbd> 누르고 드래그하면 방 이동, 모바일은 핀치 줌 OK<br/>
-          - 입면: 전개도(4면) 자동 생성, <kbd>Ctrl</kbd>+휠로 확대/축소<br/><br/>
-          ✅ 창 넣기: <b>[입면]</b>에서 벽 카드의 <b>[+ 창]</b> 누르고 <b>가로/세로</b>만 입력하세요.<br/>
-          (x/sill은 선택, 비우면 자동 중앙 + sill 0.9m)<br/><br/>
-          팁: 입면은 화면이 넓어야 편해서 <b>자동으로 왼쪽 메뉴가 접힙니다.</b><br/>
-          다시 펼치려면 왼쪽 위 <b>◀/▶</b> 버튼을 누르세요.
-        </div>
-      </details>
+  <div class="toast" id="toast">복사 완료!</div>
 
-      <details>
-        <summary>면적/보정 설명 (중요)</summary>
-        <div class="detailsBody">
-          ✅ <b>순면적(엑셀 동일)</b> = 가로×세로<br/>
-          ⚠️ <b>벽 포함 추정면적(참고)</b> = (가로+2t)×(세로+2t)<br/><br/>
-          단, 방끼리 붙어 있으면 공유벽이 생기므로<br/>
-          “벽 포함 추정면적”은 <b>방별 최대치</b> 느낌으로 보세요(중복 가능).<br/><br/>
-          이 사이트는 <b>엑셀과 같은 순면적</b>을 기본으로 유지하고,<br/>
-          벽두께는 <b>3D 벽 두께/벽체부피 추정</b>에 특히 유용하게 쓰입니다.
-        </div>
-      </details>
-
-      <details>
-        <summary>데이터 형식 (중요)</summary>
-        <div class="detailsBody">
-          최소 3개만 있어도 됩니다: <b>방이름 / 가로 / 세로</b><br/>
-          (ID/높이/창면적은 없어도 자동 처리)<br/><br/>
-
-          ✅ 창(계산용) 입력<br/>
-          - <b>창면적(㎡)</b>은 계산용입니다. (벽면적에서 빼는 용도)<br/>
-          - 창을 <b>그림</b>으로 넣고 싶으면 <b>[입면]</b>에서 벽 카드의 <b>[+ 창]</b>을 사용하세요.
-        </div>
-      </details>
-
-      <details>
-        <summary>단축키</summary>
-        <div class="detailsBody">
-          <b>공통</b>: <kbd>P</kbd> 캡처 저장 📸<br/>
-          <b>3D</b>: <kbd>Shift</kbd>+드래그 방 이동 / <kbd>L</kbd> 라벨 토글 / <kbd>G</kbd> 정답유령 토글
-        </div>
-      </details>
-
-      <details>
-        <summary>다운로드/상담</summary>
-        <div class="detailsBody">
-          📂 엑셀키트: <a href="https://drive.google.com/file/d/112Y3BEiE_1ooNrF5tPZd6SnDRHyXcrDg/view?usp=sharing" target="_blank">다운</a><br/>
-          📑 구글시트 사본: <a href="https://docs.google.com/spreadsheets/d/1GW5nJHgax0XTXOPyyVusVr_WKob3S5URJG1lSiAM6bE/copy" target="_blank">사본 만들기</a><br/>
-          💬 톡톡: <a href="https://talk.naver.com/W4HB1I" target="_blank">상담하기</a><br/>
-          🌿 그린리모델링: <a href="https://yugy.store" target="_blank">yugy.store</a>
-        </div>
-      </details>
-    </div>
-  </div>
-
-  <div id="viewer">
-    <div id="twod"></div>
-    <div id="three"></div>
-    <div id="elev"></div>
-  </div>
-
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-    // -----------------------------
-    // 0) 상태/팔레트
-    // -----------------------------
-    const EXCEL_COLORS = [
-      "#FFCCCC","#FFE5CC","#FFFFCC","#E5FFCC","#CCFFCC","#CCFFE5","#CCFFFF","#CCE5FF","#CCCCFF","#E5CCFF",
-      "#FFCCFF","#FFCCE5","#FFB2B2","#FFD6A5","#FFEF9F","#CAE799","#A6E3A1","#99DDCC","#9FDBFF","#ADC1FF",
-      "#C8B2FF","#E0B2FF","#FFB2F5","#FFB2D7","#FFB2B2","#FF8282","#FFAA64","#FFD246","#B4DC5A","#78D296"
+  <script>
+    // ====== Data: 별표1 대분류(요약) ======
+    const USE_CATEGORIES = [
+      ["", "선택"],
+      ["1", "1. 단독주택"],
+      ["2", "2. 공동주택"],
+      ["3", "3. 제1종 근린생활시설"],
+      ["4", "4. 제2종 근린생활시설"],
+      ["5", "5. 문화 및 집회시설"],
+      ["6", "6. 종교시설"],
+      ["7", "7. 판매시설"],
+      ["8", "8. 운수시설"],
+      ["9", "9. 의료시설"],
+      ["10", "10. 교육연구시설"],
+      ["11", "11. 노유자시설"],
+      ["12", "12. 수련시설"],
+      ["13", "13. 운동시설"],
+      ["14", "14. 업무시설"],
+      ["15", "15. 숙박시설"],
+      ["16", "16. 위락시설"],
+      ["17", "17. 공장"],
+      ["18", "18. 창고시설"],
+      ["19", "19. 위험물 저장 및 처리시설"],
+      ["20", "20. 자동차 관련 시설"],
+      ["21", "21. 동물 및 식물 관련 시설"],
+      ["22", "22. 자원순환 관련 시설"],
+      ["23", "23. 교정시설"],
+      ["23-2", "23의2. 국방·군사시설"],
+      ["24", "24. 방송통신시설"],
+      ["25", "25. 발전시설"],
+      ["26", "26. 묘지 관련 시설"],
+      ["27", "27. 관광 휴게시설"],
+      ["28", "28. 장례시설"],
+      ["29", "29. 야영장 시설"]
     ];
 
-    let mode = '3d';
-    /**
-     * globalData row:
-     * {
-     *  id,name,w,d,h,
-     *  winTotal, winAreaPlaced, win:{front,back,left,right},  // (계산용) 창면적
-     *  windows:{front:[],back:[],left:[],right:[]},           // (표시용) 창 사각형
-     *  winPlaced,                                             // windows 존재 여부
-     *  x2d,y2d
-     * }
-     */
-    let globalData = [];
-    let globalWallThicknessMm = 200;
-    let globalWallThicknessM = 0.2;
+    // ====== Helpers ======
+    const $ = (id)=>document.getElementById(id);
+    const toast = (msg)=>{
+      const t = $("toast");
+      t.textContent = msg || "완료!";
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 1200);
+    };
+    const num = (v)=>{
+      const x = parseFloat(v);
+      return Number.isFinite(x) ? x : null;
+    };
 
-    const $ = (id) => document.getElementById(id);
-    const statusEl = $('status');
-    const inputEl = $('dataInput');
-    const tooltip = $('tooltip');
-    const ui = $('ui');
-    const uiToggle = $('uiToggle');
-    const autoClearEl = $('autoClear');
-
-    // Zoom HUD
-    const zoomHud = $('zoomHud');
-    const zoomLabel = $('zoomLabel');
-    const zoomInBtn = $('zoomIn');
-    const zoomOutBtn = $('zoomOut');
-    const zoomResetBtn = $('zoomReset');
-
-    function setStatus(html){ statusEl.innerHTML = html; }
-
-    // -----------------------------
-    // ✅ UI 접기/펼치기
-    // -----------------------------
-    let uiCollapsed = localStorage.getItem('uiCollapsed') === '1';
-
-    function calcUiHide(){
-      const w = ui.getBoundingClientRect().width || 360;
-      ui.style.setProperty('--uiHide', (w + 16) + 'px');
-    }
-
-    function applyUiCollapsed(){
-      ui.classList.toggle('collapsed', uiCollapsed);
-      uiToggle.textContent = uiCollapsed ? '▶' : '◀';
-      uiToggle.title = uiCollapsed ? '메뉴 펼치기' : '메뉴 접기';
-    }
-
-    function setUiCollapsed(next){
-      uiCollapsed = !!next;
-      localStorage.setItem('uiCollapsed', uiCollapsed ? '1' : '0');
-      calcUiHide();
-      applyUiCollapsed();
-    }
-
-    uiToggle.addEventListener('click', ()=> setUiCollapsed(!uiCollapsed));
-
-    // -----------------------------
-    // ✅ 새로고침 자동 초기화(옵션)
-    // -----------------------------
-    const savedAutoClear = localStorage.getItem('autoClearOnReload');
-    autoClearEl.checked = (savedAutoClear === null) ? true : (savedAutoClear === '1');
-    autoClearEl.addEventListener('change', ()=>{
-      localStorage.setItem('autoClearOnReload', autoClearEl.checked ? '1' : '0');
-    });
-
-    // -----------------------------
-    // ✅ 2D/입면 줌
-    // -----------------------------
-    let twodZoom = parseFloat(localStorage.getItem('twodZoom') || '1') || 1;
-    let elevZoom = parseFloat(localStorage.getItem('elevZoom') || '1') || 1;
-
-    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-    function clampZoom(z){ return clamp(z, 0.35, 3.2); }
-
-    function setZoomForMode(z){
-      if (mode === '2d'){
-        twodZoom = clampZoom(z);
-        $('twod').style.zoom = String(twodZoom);
-        localStorage.setItem('twodZoom', String(twodZoom));
-        zoomLabel.textContent = `${Math.round(twodZoom*100)}%`;
-      } else if (mode === 'elev'){
-        elevZoom = clampZoom(z);
-        $('elev').style.zoom = String(elevZoom);
-        localStorage.setItem('elevZoom', String(elevZoom));
-        zoomLabel.textContent = `${Math.round(elevZoom*100)}%`;
-      }
-    }
-
-    function syncZoomHud(){
-      const on = (mode==='2d' || mode==='elev');
-      zoomHud.style.display = on ? 'flex' : 'none';
-      if (!on) return;
-      if (mode==='2d') zoomLabel.textContent = `${Math.round(twodZoom*100)}%`;
-      if (mode==='elev') zoomLabel.textContent = `${Math.round(elevZoom*100)}%`;
-    }
-
-    zoomInBtn.addEventListener('click', ()=> setZoomForMode((mode==='2d'?twodZoom:elevZoom) * 1.12));
-    zoomOutBtn.addEventListener('click', ()=> setZoomForMode((mode==='2d'?twodZoom:elevZoom) * 0.90));
-    zoomResetBtn.addEventListener('click', ()=> setZoomForMode(1));
-
-    function attachWheelZoom(el, modeName){
-      el.addEventListener('wheel', (e)=>{
-        if (modeName === '2d'){
-          if (e.shiftKey) return;
-          e.preventDefault();
-          const dir = e.deltaY < 0 ? 1.10 : 0.92;
-          setZoomForMode(twodZoom * dir);
-          return;
-        }
-        if (modeName === 'elev'){
-          if (!(e.ctrlKey || e.metaKey)) return;
-          e.preventDefault();
-          const dir = e.deltaY < 0 ? 1.10 : 0.92;
-          setZoomForMode(elevZoom * dir);
-        }
-      }, { passive:false });
-    }
-
-    function attachPinchZoom(el, getZ, setZ){
-      let pinchStartDist = 0;
-      let pinchStartZoom = 1;
-
-      function dist(t1,t2){
-        const dx = t1.clientX - t2.clientX;
-        const dy = t1.clientY - t2.clientY;
-        return Math.hypot(dx,dy);
-      }
-
-      el.addEventListener('touchstart', (e)=>{
-        if (e.touches && e.touches.length === 2){
-          pinchStartDist = dist(e.touches[0], e.touches[1]);
-          pinchStartZoom = getZ();
-        }
-      }, { passive:false });
-
-      el.addEventListener('touchmove', (e)=>{
-        if (e.touches && e.touches.length === 2){
-          e.preventDefault();
-          const d = dist(e.touches[0], e.touches[1]);
-          if (!pinchStartDist) return;
-          const ratio = d / pinchStartDist;
-          setZ(pinchStartZoom * ratio);
-        }
-      }, { passive:false });
-    }
-
-    // -----------------------------
-    // 1) 단위/파서
-    // -----------------------------
-    function numOnly(v){
-      if (v === null || v === undefined) return '';
-      return String(v).replace(/[^0-9.\-]/g,'').trim();
-    }
-    function smartUnit(v){
-      const s = numOnly(v);
-      const n = parseFloat(s);
-      if (!isFinite(n) || n <= 0) return 0;
-      if (n > 100) return n / 1000;
-      return n;
-    }
-    function smartThickness(v, fallbackM){
-      const s = numOnly(v);
-      const n = parseFloat(s);
-      if (!isFinite(n) || n <= 0) return fallbackM;
-      if (n > 10) return n / 1000;
-      return n;
-    }
-    function getGlobalThickness(){
-      const raw = $('wallThk').value;
-      let t = smartThickness(raw, 0.2);
-      if (!isFinite(t) || t <= 0) t = 0.2;
-      if (t < 0.03) t = 0.03;
-      if (t > 1.0) t = 1.0;
-      globalWallThicknessM = t;
-      globalWallThicknessMm = Math.round(t*1000);
-      return t;
-    }
-
-    function parseAreaCell(v){
-      const n = parseFloat(numOnly(v));
-      return (isFinite(n) && n > 0) ? n : 0;
-    }
-    function normFace(v){
-      const s = String(v ?? '').trim().toLowerCase();
-      if (!s) return null;
-      if (/^(f|front)$/.test(s) || /앞|전면/.test(s)) return 'front';
-      if (/^(b|back)$/.test(s)  || /뒤|후면/.test(s)) return 'back';
-      if (/^(l|left)$/.test(s)  || /좌|왼/.test(s)) return 'left';
-      if (/^(r|right)$/.test(s) || /우|오른/.test(s)) return 'right';
-      return null;
-    }
-
-    function splitCols(line){
-      const t = (line || '').trim();
-      if (!t) return null;
-      if (t.includes('\t')) return t.split('\t').map(x=>x.trim());
-      if (t.includes(',')) return t.split(',').map(x=>x.trim());
-      return t.split(/\s+/).map(x=>x.trim());
-    }
-
-    function detectHeader(cols){
-      const lower = cols.map(c => String(c).toLowerCase().replace(/\s/g,'').replace(/[()]/g,''));
-      const map = {};
-      lower.forEach((c,i)=>{
-        if (/공간id|방id|id|번호/.test(c)) map.id=i;
-        if (/공간명|방이름|이름|name/.test(c)) map.name=i;
-        if (/가로|width|w|길이/.test(c)) map.w=i;
-        if (/세로|depth|d|너비/.test(c)) map.d=i;
-        if (/벽높이|높이|height|h/.test(c)) map.h=i;
-
-        if (/창면적|창문면적|windowarea|winarea/.test(c)) map.winTotal=i;
-        if (/창면|창위치|창방향|winface|windowface|face/.test(c)) map.winFace=i;
-
-        if (/창앞|창면적앞|전면창|winfront|windowfront/.test(c)) map.winFront=i;
-        if (/창뒤|창면적뒤|후면창|winback|windowback/.test(c)) map.winBack=i;
-        if (/창좌|창면적좌|좌측창|winleft|windowleft/.test(c)) map.winLeft=i;
-        if (/창우|창면적우|우측창|winright|windowright/.test(c)) map.winRight=i;
+    // ====== Populate selects ======
+    function populateUseSelect(sel){
+      sel.innerHTML = "";
+      USE_CATEGORIES.forEach(([v, label])=>{
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = label;
+        sel.appendChild(opt);
       });
-      if (map.name !== undefined && map.w !== undefined && map.d !== undefined) return map;
-      return null;
+    }
+    populateUseSelect($("useFrom"));
+    populateUseSelect($("useTo"));
+
+    // ====== UI State ======
+    function getAction(){
+      const r = document.querySelector('input[name="action"]:checked');
+      return r ? r.value : "";
+    }
+    function requiredFieldsForAction(action){
+      // returns list of required keys
+      if (!action || action==="기타") return [];
+      if (action==="용도변경") return ["isUrban", "useFrom", "useTo"];
+      // 건축/대수선 계열
+      const keys = ["isUrban", "gfa", "floors"];
+      if (["증축","개축","재축"].includes(action)) keys.push("delta");
+      if (action==="대수선") keys.push("mrBox"); // special group
+      return keys;
     }
 
-    function makeEmptyWindows(){
-      return { front:[], back:[], left:[], right:[] };
+    function refreshVisibility(){
+      const action = getAction();
+
+      // delta field visibility
+      const needDelta = ["증축","개축","재축"].includes(action);
+      $("deltaWrap").classList.toggle("hide", !needDelta);
+
+      // major repair visibility
+      $("majorRepairCard").classList.toggle("hide", action!=="대수선");
+
+      // use change visibility
+      $("useChangeCard").classList.toggle("hide", action!=="용도변경");
+
+      // zone visibility: only relevant when isUrban is 'no'
+      const isUrban = $("isUrban").value;
+      $("zoneWrap").classList.toggle("hide", isUrban!=="no");
+
+      // progress text
+      $("p1t").textContent = action ? `선택됨: ${action}` : "신축/증축/개축/재축/이전/대수선/용도변경 중 하나를 고르세요.";
     }
-    function ensureRoomWindows(r){
-      if (!r.windows) r.windows = makeEmptyWindows();
-      for (const k of ['front','back','left','right']){
-        if (!Array.isArray(r.windows[k])) r.windows[k] = [];
+
+    function progressSet(idChip, status, text){
+      const chip = $(idChip);
+      chip.classList.remove("done","todo","block");
+      chip.classList.add(status);
+      if (text) chip.textContent = text;
+      else chip.textContent = status==="done" ? "완료" : (status==="block" ? "입력 부족" : "입력 필요");
+    }
+
+    function updateProgress(missing){
+      const action = getAction();
+      // Step1
+      if (action && action!=="기타") progressSet("p1c","done","완료");
+      else progressSet("p1c","todo","입력 필요");
+
+      // Step2: isUrban required always once action is meaningful
+      const isUrban = $("isUrban").value;
+      if (!action || action==="기타") progressSet("p2c","todo","입력 필요");
+      else{
+        if (!isUrban) progressSet("p2c","todo","입력 필요");
+        else if (isUrban==="no" && !$("zone").value) progressSet("p2c","todo","추가입력");
+        else progressSet("p2c","done","완료");
       }
-      r.winPlaced = (r.windows.front.length + r.windows.back.length + r.windows.left.length + r.windows.right.length) > 0;
-      if (r.winAreaPlaced === undefined) r.winAreaPlaced = false;
-      if (!r.win) r.win = {front:0,back:0,left:0,right:0};
-      if (!isFinite(r.winTotal)) r.winTotal = 0;
-      if (!isFinite(r.h) || r.h<=0) r.h = 2.3;
-      return r;
-    }
-    function rectAreaSum(r){
-      ensureRoomWindows(r);
-      let s = 0;
-      for (const k of ['front','back','left','right']){
-        for (const w of r.windows[k]){
-          const a = (parseFloat(w.w)||0) * (parseFloat(w.h)||0);
-          if (isFinite(a) && a>0) s += a;
-        }
+
+      // Step3: size fields for most actions
+      if (!action || action==="기타" || action==="용도변경"){
+        progressSet("p3c","todo","대상 아님");
+      } else{
+        const gfaOk = num($("gfa").value)!=null;
+        const floorsOk = num($("floors").value)!=null;
+        const needDelta = ["증축","개축","재축"].includes(action);
+        const deltaOk = !needDelta || (num($("delta").value)!=null);
+        if (gfaOk && floorsOk && deltaOk) progressSet("p3c","done","완료");
+        else progressSet("p3c","todo","입력 필요");
       }
-      return s;
+
+      // Step4: exception check step
+      if (!action || action==="기타") progressSet("p4c","todo","대기");
+      else progressSet("p4c", missing.length ? "block" : "done", missing.length ? "입력 부족" : "체크 완료");
+
+      // Step5 result
+      progressSet("p5c", missing.length ? "todo" : "done", missing.length ? "대기" : "표시됨");
     }
 
-    // ✅ 초보용: 헤더 없어도 "방이름 가로 세로" 3열이면 인식
-    function parseLooseRow(cols){
-      const idTry = parseInt(numOnly(cols[0] ?? ''), 10);
-      const nameTry = String(cols[1] ?? '').trim();
+    // ====== Core Logic ======
+    function judge(){
+      const action = getAction();
+      const isUrban = $("isUrban").value;          // yes/no
+      const zone = $("zone").value;                // 관리/농림/자연/기타
+      const gfa = num($("gfa").value);             // m2
+      const floors = num($("floors").value);       // count
+      const delta = num($("delta").value);         // m2
+      const note = ($("note").value || "").trim();
 
-      const wTry1 = smartUnit(cols[2]);
-      const dTry1 = smartUnit(cols[3]);
-      if (isFinite(idTry) && idTry > 0 && nameTry && wTry1 > 0 && dTry1 > 0){
-        let h = smartUnit(cols[4]); if (!h) h = 2.3;
-        let winTotal = parseAreaCell(cols[5]);
-        return ensureRoomWindows({
-          id:idTry, name:nameTry, w:wTry1, d:dTry1, h,
-          winTotal,
-          winAreaPlaced:false,
-          win:{front:0,back:0,left:0,right:0},
-          windows: makeEmptyWindows(),
-          winPlaced:false
+      const mrDecree = $("mrDecree").checked;
+      const mrNoStructure = $("mrNoStructure").checked;
+
+      const useFrom = $("useFrom").value;
+      const useTo = $("useTo").value;
+
+      // Validate required fields
+      const req = requiredFieldsForAction(action);
+      const missing = [];
+
+      if (req.includes("isUrban") && !isUrban) missing.push("도시지역 여부");
+      if (isUrban==="no" && !zone && (action && action!=="기타")) missing.push("도시지역이 아닌 경우 지역(관리/농림/자연/기타)");
+
+      if (req.includes("gfa") && gfa==null) missing.push("연면적(m²)");
+      if (req.includes("floors") && floors==null) missing.push("층수(지하 제외)");
+      if (req.includes("delta") && delta==null) missing.push("증가 연면적 합계(m²)");
+
+      if (action==="용도변경"){
+        if (!useFrom) missing.push("변경 전 용도(대분류)");
+        if (!useTo) missing.push("변경 후 용도(대분류)");
+      }
+
+      refreshVisibility();
+      updateProgress(missing);
+
+      // If action not chosen or 기타
+      if (!action || action==="기타"){
+        renderResult({
+          status: "warn",
+          title: "🟡 입력 대기",
+          short: "먼저 행위를 선택해 주세요.",
+          why: "행위를 선택하면 필요한 질문이 자동으로 열립니다.",
+          bullets: [
+            "예: 증축이면 ‘증가 연면적 합계’를 입력하는 방식입니다.",
+            "모르면 ‘기타’를 선택하지 말고, 가장 가까운 행위를 선택해 주세요."
+          ],
+          path: []
         });
+        return { ok:false, missing, decision:null };
       }
 
-      const name2 = String(cols[0] ?? '').trim();
-      const wTry2 = smartUnit(cols[1]);
-      const dTry2 = smartUnit(cols[2]);
-      if (name2 && wTry2 > 0 && dTry2 > 0){
-        let h = smartUnit(cols[3]); if (!h) h = 2.3;
-        let winTotal = parseAreaCell(cols[4]);
-        return ensureRoomWindows({
-          id:0, name:name2, w:wTry2, d:dTry2, h,
-          winTotal,
-          winAreaPlaced:false,
-          win:{front:0,back:0,left:0,right:0},
-          windows: makeEmptyWindows(),
-          winPlaced:false
+      // If missing required inputs
+      if (missing.length){
+        renderResult({
+          status:"warn",
+          title:"🟡 추가 입력 필요",
+          short:`아직 ${missing.length}개 입력이 비었습니다.`,
+          why:"모르는 칸은 빈칸으로 둘 수 있지만, 그 경우 결과는 ‘추가검토’로 안내됩니다.",
+          bullets: [
+            "비어있는 항목: " + missing.join(", "),
+            "그래도 진행하려면: 아는 값만 넣고 ‘판정하기’ 버튼을 다시 눌러 주세요."
+          ],
+          path: ["원칙은 허가", "예외조건 체크 전에 입력이 부족"]
         });
+        return { ok:false, missing, decision:null };
       }
 
-      return null;
-    }
+      // ===== Decision engine =====
+      // Outputs: PERMIT / REPORT_IN_LIEU / REVIEW
+      let decision = "PERMIT";
+      let reason = [];
+      let path = ["시작", "행위 확인"];
 
-    function parseText(text){
-      const lines = String(text||'').split(/\r?\n/);
-      const parsed = [];
-      let headerMap = null;
-      let autoId = 1;
-      let skipped = 0;
-
-      for (const line of lines){
-        const cols = splitCols(line);
-        if (!cols) continue;
-
-        if (!headerMap){
-          const hm = detectHeader(cols);
-          if (hm){
-            headerMap = hm;
-            continue;
+      if (action==="용도변경"){
+        path.push("용도변경 모드");
+        if (useFrom && useTo){
+          if (useFrom !== useTo){
+            decision = "PERMIT";
+            reason.push("별표1 대분류가 서로 다릅니다. 일반적으로 허가 가능성이 높아집니다(추가검토 포함).");
+            path.push("대분류 상이 -> 허가 가능성 높음");
+          }else{
+            decision = "REVIEW";
+            reason.push("별표1 대분류는 동일합니다. 세부용도/시설군/면적/구조/피난 등 추가검토가 필요합니다.");
+            path.push("대분류 동일 -> 추가검토");
           }
+        }else{
+          decision = "REVIEW";
+          reason.push("용도변경 전/후 용도 입력이 부족합니다.");
+          path.push("입력 부족 -> 추가검토");
         }
 
-        if (!headerMap){
-          const loose = parseLooseRow(cols);
-          if (loose){
-            if (!loose.id) loose.id = autoId;
-            parsed.push(loose);
-            autoId = Math.max(autoId, loose.id + 1);
-          } else {
-            skipped++;
-          }
-          continue;
-        }
+        renderDecision(decision, {
+          action, isUrban, zone, gfa, floors, delta, note,
+          useFrom, useTo, mrDecree, mrNoStructure,
+          reason, path
+        });
+        return { ok:true, missing:[], decision };
+      }
 
-        const idxId = headerMap?.id ?? 0;
-        const idxName = headerMap?.name ?? 1;
-        const idxW = headerMap?.w ?? 2;
-        const idxD = headerMap?.d ?? 3;
-        const idxH = headerMap?.h ?? 4;
+      // 건축/대수선 계열
+      path.push("건축/대수선 모드");
+      // 원칙: 허가
+      decision = "PERMIT";
+      reason.push("원칙: 건축(신축/증축/개축/재축/이전) 및 대수선은 허가를 기본으로 봅니다.");
 
-        const name = String(cols[idxName] ?? '').trim();
-        if (!name){ skipped++; continue; }
-
-        let id = parseInt(numOnly(cols[idxId] ?? ''),10);
-        if (!isFinite(id) || id <= 0) id = autoId;
-
-        const w = smartUnit(cols[idxW]);
-        const d = smartUnit(cols[idxD]);
-        let h = smartUnit(cols[idxH]);
-        if (!h) h = 2.3;
-
-        const idxWinTotal = headerMap?.winTotal;
-        const idxWinFace  = headerMap?.winFace;
-        const idxWinFront = headerMap?.winFront;
-        const idxWinBack  = headerMap?.winBack;
-        const idxWinLeft  = headerMap?.winLeft;
-        const idxWinRight = headerMap?.winRight;
-
-        const win = { front:0, back:0, left:0, right:0 };
-        let winTotal = 0;
-        let winAreaPlaced = false;
-
-        const wf = (idxWinFront !== undefined) ? parseAreaCell(cols[idxWinFront]) : 0;
-        const wb = (idxWinBack  !== undefined) ? parseAreaCell(cols[idxWinBack])  : 0;
-        const wl = (idxWinLeft  !== undefined) ? parseAreaCell(cols[idxWinLeft])  : 0;
-        const wr = (idxWinRight !== undefined) ? parseAreaCell(cols[idxWinRight]) : 0;
-
-        if (wf+wb+wl+wr > 0){
-          win.front = wf; win.back = wb; win.left = wl; win.right = wr;
-          winTotal = wf+wb+wl+wr;
-          winAreaPlaced = true;
+      // 예외 1: 증축/개축/재축 증가연면적 합계 85㎡ 이하
+      if (["증축","개축","재축"].includes(action)){
+        path.push("예외(85㎡) 체크");
+        if (delta != null && delta <= 85){
+          decision = "REPORT_IN_LIEU";
+          reason.push(`예외: ${action} 증가 연면적 합계 ${delta}㎡ ≤ 85㎡ 이므로 ‘신고로 허가를 갈음’ 가능 구간입니다.`);
+          path.push("85㎡ 이하 충족 -> 신고(허가 갈음)");
         } else {
-          if (idxWinTotal !== undefined){
-            winTotal = parseAreaCell(cols[idxWinTotal]);
-          } else {
-            const joined = cols.join(' ');
-            const m = joined.match(/창면적\s*=?\s*([0-9.]+)/);
-            if (m){
-              const wa = parseFloat(m[1]);
-              if (isFinite(wa) && wa > 0) winTotal = wa;
+          path.push("85㎡ 예외 불충족");
+        }
+      }
+
+      // 예외 2/3: 도시지역이 아닌 관리/농림/자연환경보전 + 연면적<200 + 3층 미만
+      const nonUrbanSpecial = (isUrban==="no" && ["관리지역","농림지역","자연환경보전지역"].includes(zone));
+      if (decision !== "REPORT_IN_LIEU"){ // already decided by stronger simple rule
+        path.push("예외(비도시 + 특수지역) 체크");
+        if (nonUrbanSpecial){
+          const sizeOk = (gfa != null && gfa < 200);
+          const floorsOk = (floors != null && floors < 3);
+
+          if (sizeOk && floorsOk){
+            if (["신축","증축","개축","재축"].includes(action)){
+              decision = "REPORT_IN_LIEU";
+              reason.push("예외: 도시지역 아님 + (관리/농림/자연환경보전) + 연면적 200㎡ 미만 + 3층 미만 조건 충족으로 ‘신고로 허가 갈음’ 가능 구간입니다.");
+              path.push("200㎡/3층 미만 충족 -> 신고(허가 갈음)");
+            } else if (action==="대수선"){
+              // 대수선은 추가 요건 체크
+              if (mrNoStructure){
+                decision = "REPORT_IN_LIEU";
+                reason.push("예외: 비도시 특수지역 + 연면적 200㎡ 미만 + 3층 미만 + (주요구조부 해체 없음 등) 요건 체크됨 -> ‘신고로 허가 갈음’ 가능 구간.");
+                path.push("대수선 요건 체크됨 -> 신고(허가 갈음)");
+              } else {
+                decision = "REVIEW";
+                reason.push("대수선은 ‘주요구조부 해체 없음 등’ 대통령령 요건 여부에 따라 갈립니다. 현재 미체크 상태라 추가검토로 안내합니다.");
+                path.push("대수선 요건 불명 -> 추가검토");
+              }
+            } else if (action==="이전"){
+              decision = "PERMIT";
+              reason.push("이전은 여기 예외 조항에 단순 매칭되지 않습니다. 허가 쪽으로 안내합니다.");
+              path.push("이전 -> 허가 유지");
             }
+          } else {
+            path.push("200㎡/3층 미만 불충족");
           }
-
-          if (winTotal > 0 && idxWinFace !== undefined){
-            const face = normFace(cols[idxWinFace]);
-            if (face){
-              win[face] = winTotal;
-              winAreaPlaced = true;
-            }
-          }
-        }
-
-        if (w > 0 && d > 0){
-          parsed.push(ensureRoomWindows({
-            id, name, w, d, h,
-            winTotal,
-            winAreaPlaced,
-            win,
-            windows: makeEmptyWindows(),
-            winPlaced:false
-          }));
-          autoId = Math.max(autoId, id + 1);
         } else {
-          skipped++;
+          path.push("비도시 특수지역 아님");
         }
       }
-      return { parsed, skipped };
-    }
 
-    // -----------------------------
-    // 2) 초기화
-    // -----------------------------
-    const twod = $('twod');
-    const elev = $('elev');
-    const threeEl = $('three');
-
-    function setDefaultStatus(){
-      setStatus(`<b>상태</b><br/>아직 데이터가 없습니다. 위 칸에 붙여넣고 <b>[도면 생성]</b>을 눌러주세요.`);
-    }
-
-    function hardReset({ clearInput=true } = {}){
-      twod.innerHTML = '';
-      elev.innerHTML = '';
-
-      pieces.forEach(p => scene.remove(p));
-      ghosts.forEach(g => scene.remove(g));
-      pieces = []; ghosts = []; hitMeshes = []; labels3D = [];
-      dragging = false;
-      draggedGroup = null;
-
-      globalData = [];
-      if (clearInput) inputEl.value = '';
-
-      tooltip.style.display = 'none';
-      setStatus(`<b>상태</b><br/>초기화 완료. 다시 붙여넣고 <b>[도면 생성]</b> 누르세요.`);
-    }
-
-    function maybeAutoClearOnReload(){
-      if (!autoClearEl.checked) return;
-      const clear = ()=>{
-        inputEl.value = '';
-        hardReset({ clearInput:true });
-        setDefaultStatus();
-      };
-      clear();
-      setTimeout(clear, 0);
-      setTimeout(clear, 80);
-    }
-
-    window.addEventListener('pageshow', ()=>{
-      maybeAutoClearOnReload();
-    });
-
-    // -----------------------------
-    // 3) 2D
-    // -----------------------------
-    const SCALE_2D = 40;
-    let active2D = null;
-    let active2DOffset = { x:0, y:0 };
-
-    function build2D(){
-      twod.innerHTML = '';
-      if (!globalData.length) return;
-
-      const START_X = 380, START_Y = 40, LIMIT = 980, GAP = 18;
-      let x = START_X, y = START_Y, rowH = 0;
-
-      const title = document.createElement('div');
-      title.style.position='absolute';
-      title.style.left='16px';
-      title.style.top='10px';
-      title.style.fontWeight='900';
-      title.style.fontSize='14px';
-      title.innerHTML='2D 모드: 방 조각을 드래그로 맞추기 <span style="font-size:12px;color:#666;font-weight:800;">(휠=확대/축소, Shift+휠=스크롤)</span>';
-      twod.appendChild(title);
-
-      globalData.forEach((d)=>{
-        const color = EXCEL_COLORS[(d.id-1) % EXCEL_COLORS.length] || '#ddd';
-        const wPx = d.w * SCALE_2D;
-        const dPx = d.d * SCALE_2D;
-
-        if (x + wPx > START_X + LIMIT){ x = START_X; y += rowH + GAP; rowH = 0; }
-
-        const div = document.createElement('div');
-        div.className='room2d';
-        div.dataset.id = d.id;
-        div.style.left = (d.x2d ?? (x+'px'));
-        div.style.top = (d.y2d ?? (y+'px'));
-        div.style.width = wPx+'px';
-        div.style.height = dPx+'px';
-        div.style.background = color;
-        div.innerHTML = `<b>${d.name}</b><span style="font-size:11px;color:#111">(${d.w}×${d.d}m)</span>`;
-        twod.appendChild(div);
-
-        x += wPx + GAP;
-        rowH = Math.max(rowH, dPx);
-      });
-    }
-
-    function save2DPositions(){
-      const nodes = twod.querySelectorAll('.room2d');
-      nodes.forEach(n=>{
-        const id = parseInt(n.dataset.id,10);
-        const m = globalData.find(x=>x.id===id);
-        if (m){
-          m.x2d = n.style.left;
-          m.y2d = n.style.top;
-        }
-      });
-    }
-
-    twod.addEventListener('pointerdown', (e)=>{
-      const target = e.target.closest('.room2d');
-      if (!target) return;
-      active2D = target;
-      active2D.classList.add('dragging');
-      const r = active2D.getBoundingClientRect();
-      active2DOffset.x = e.clientX - r.left;
-      active2DOffset.y = e.clientY - r.top;
-    });
-    twod.addEventListener('pointermove', (e)=>{
-      if (!active2D) return;
-      e.preventDefault();
-      const c = twod.getBoundingClientRect();
-      const cx = e.clientX - c.left + twod.scrollLeft;
-      const cy = e.clientY - c.top + twod.scrollTop;
-      active2D.style.left = (cx - active2DOffset.x) + 'px';
-      active2D.style.top  = (cy - active2DOffset.y) + 'px';
-    });
-    function end2D(){
-      if (!active2D) return;
-      active2D.classList.remove('dragging');
-      active2D = null;
-      save2DPositions();
-    }
-    twod.addEventListener('pointerup', end2D);
-    twod.addEventListener('pointerleave', end2D);
-
-    // -----------------------------
-    // 4) 입면(전개도) + 창(사각형) 표시
-    // -----------------------------
-    function validateWindowRect(wallW, wallH, win){
-      const ww = parseFloat(win.w)||0;
-      const wh = parseFloat(win.h)||0;
-      const x = parseFloat(win.x)||0;
-      const sill = parseFloat(win.sill)||0;
-      if (!(ww>0 && wh>0)) return { ok:false, reason:"size" };
-      if (ww > wallW*0.999) return { ok:false, reason:"tooWide" };
-      if (wh > wallH*0.999) return { ok:false, reason:"tooTall" };
-      if (x < -1e-6 || x + ww > wallW + 1e-6) return { ok:false, reason:"xOut" };
-      if (sill < -1e-6 || sill + wh > wallH + 1e-6) return { ok:false, reason:"yOut" };
-      return { ok:true };
-    }
-
-    function wallSVG(wallW, h, windows, colorHex, label){
-      const vbW = wallW;
-      const vbH = h;
-
-      const marginX = vbW*0.08;
-      const marginY = vbH*0.08;
-      const innerW = vbW*(1-0.16);
-      const innerH = vbH*(1-0.16);
-      const sx = innerW / vbW;
-      const sy = innerH / vbH;
-
-      const wallStroke = "#111827";
-      const wallFill = colorHex;
-
-      let anyInvalid = false;
-      const rects = [];
-
-      for (const win of (windows||[])){
-        const ww = parseFloat(win.w)||0;
-        const wh = parseFloat(win.h)||0;
-        let x = parseFloat(win.x);
-        let sill = parseFloat(win.sill);
-
-        if (!isFinite(x)) x = (vbW - ww) / 2;
-        if (!isFinite(sill)) sill = 0.9;
-
-        const chk = validateWindowRect(vbW, vbH, {w:ww,h:wh,x,sill});
-        const invalid = !chk.ok;
-        anyInvalid = anyInvalid || invalid;
-
-        const yTop = vbH - (sill + wh);
-        rects.push({
-          x: marginX + x*sx,
-          y: marginY + yTop*sy,
-          w: ww*sx,
-          h: wh*sy,
-          invalid
-        });
-      }
-
-      const svg = `
-        <svg viewBox="0 0 ${vbW} ${vbH}" width="100%" preserveAspectRatio="xMidYMid meet">
-          <rect x="${marginX}" y="${marginY}" width="${innerW}" height="${innerH}"
-            fill="${wallFill}" fill-opacity="0.75" stroke="${wallStroke}" stroke-width="${Math.max(0.02, vbW*0.01)}" rx="${vbW*0.05}" />
-          ${
-            rects.map(r=>{
-              const fill = r.invalid ? "rgba(255,77,77,0.45)" : "rgba(102,204,255,0.32)";
-              const stroke = r.invalid ? "#7f0000" : "#0b4aa2";
-              return `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}"
-                fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(0.02, vbW*0.01)}" rx="${vbW*0.03}" />`;
-            }).join('')
-          }
-          <text x="${vbW*0.5}" y="${vbH*0.12}" text-anchor="middle" font-size="${Math.max(0.18, vbW*0.06)}"
-            font-family="Malgun Gothic, system-ui" font-weight="900" fill="#111">${label}</text>
-        </svg>
-      `;
-      return { svg, invalid:anyInvalid };
-    }
-
-    function buildElevation(){
-      elev.innerHTML = '';
-      if (!globalData.length) return;
-
-      const t = globalWallThicknessM;
-
-      const totalFloorNet = globalData.reduce((s,r)=>s + (r.w*r.d), 0);
-      const totalFloorGrossEst = globalData.reduce((s,r)=>s + ((r.w+2*t)*(r.d+2*t)), 0);
-      const totalWallInner = globalData.reduce((s,r)=>s + ((r.w+r.d)*2*r.h), 0);
-      const totalWallOuter = globalData.reduce((s,r)=>s + (((r.w+2*t)+(r.d+2*t))*2*r.h), 0);
-      const totalWinInput = globalData.reduce((s,r)=>s + (r.winTotal||0), 0);
-      const totalWinRects = globalData.reduce((s,r)=>s + rectAreaSum(r), 0);
-      const totalWallVolEst = globalData.reduce((s,r)=>{
-        const periOuter = ((r.w+2*t)+(r.d+2*t))*2;
-        return s + (periOuter * t * r.h);
-      }, 0);
-
-      const header = document.createElement('div');
-      header.className = 'elevHeader';
-      header.innerHTML = `
-        <div style="font-weight:900;font-size:14px;">입면(전개도) 자동 생성</div>
-        <div style="margin-top:6px;font-size:12px;color:#666;line-height:1.45;">
-          벽두께: <b>${(t*1000).toFixed(0)}mm</b><br/>
-          방 ${globalData.length}개 · 순면적(엑셀 동일) <b>${totalFloorNet.toFixed(2)}㎡</b> · 벽 포함 추정(참고) <b>${totalFloorGrossEst.toFixed(2)}㎡</b><br/>
-          벽면적(내측) <b>${totalWallInner.toFixed(2)}㎡</b> · 벽면적(외측 추정) <b>${totalWallOuter.toFixed(2)}㎡</b><br/>
-          창면적(입력,계산용) <b>${totalWinInput.toFixed(2)}㎡</b> · 창(사각형,표시용) <b>${totalWinRects.toFixed(2)}㎡</b><br/>
-          벽체부피(추정) <b>${totalWallVolEst.toFixed(2)}㎥</b><br/>
-          <span style="color:#111;font-weight:900;">창 추가:</span> 각 벽 카드의 <b>[+ 창]</b> (기본: 중앙 + sill 0.9m, x/sill은 선택)<br/>
-          <span style="color:#111;font-weight:900;">줌:</span> <kbd>Ctrl</kbd>+휠 (또는 우하단 +/−) · <span style="color:#111;font-weight:900;">캡처:</span> <kbd>P</kbd>
-        </div>
-      `;
-      elev.appendChild(header);
-
-      const grid = document.createElement('div');
-      grid.className = 'elevGrid';
-      elev.appendChild(grid);
-
-      globalData.forEach((r)=>{
-        ensureRoomWindows(r);
-
-        const color = EXCEL_COLORS[(r.id-1) % EXCEL_COLORS.length] || "#ddd";
-        const winRectA = rectAreaSum(r);
-
-        const placedTxt = (winRectA > 0)
-          ? '<span class="ok">창(사각형) 입력됨</span>'
-          : ((r.winTotal||0) > 0 ? '<span class="bad">창면적만 있음(그림 없음)</span>' : '<span style="color:#6b7280;font-weight:900;">없음</span>');
-
-        const card = document.createElement('div');
-        card.className = 'elevCard';
-
-        card.innerHTML = `
-          <div class="elevTitle">${r.name}</div>
-          <div class="elevMeta">
-            치수: <b>${r.w}×${r.d}×${r.h}m</b> · 벽두께 <b>${(t*1000).toFixed(0)}mm</b><br/>
-            창면적(입력): <b>${(r.winTotal||0).toFixed(2)}㎡</b> · 창(사각형): <b>${winRectA.toFixed(2)}㎡</b> · ${placedTxt}
-          </div>
-        `;
-
-        const walls = [
-          { face:'front', label:'앞', wallW:r.w, windows:(r.windows.front||[]) },
-          { face:'back',  label:'뒤', wallW:r.w, windows:(r.windows.back||[]) },
-          { face:'left',  label:'좌', wallW:r.d, windows:(r.windows.left||[]) },
-          { face:'right', label:'우', wallW:r.d, windows:(r.windows.right||[]) },
-        ];
-
-        const row = document.createElement('div');
-        row.className = 'wallRow';
-
-        let anyInvalid = false;
-
-        walls.forEach((winfo)=>{
-          const { svg, invalid } = wallSVG(winfo.wallW, r.h, winfo.windows, color, `${winfo.label}면`);
-          anyInvalid = anyInvalid || invalid;
-
-          const cnt = (winfo.windows||[]).length;
-
-          const box = document.createElement('div');
-          box.className = 'wallBox';
-          box.innerHTML = `
-            <div class="wallLabel">${winfo.label}면 · 폭 ${winfo.wallW}m · 높이 ${r.h}m</div>
-            <div class="wallSvgWrap" data-action="winAdd" data-roomid="${r.id}" data-face="${winfo.face}" title="클릭해서 창 추가">${svg}</div>
-            <div style="margin-top:6px;font-size:12px;color:#666;display:flex;justify-content:space-between;gap:10px;align-items:center;">
-              <span>창(사각형) ${cnt}개</span>
-              <span style="display:flex;gap:6px;">
-                <button class="miniBtn primary" data-action="winAdd" data-roomid="${r.id}" data-face="${winfo.face}">+ 창</button>
-                <button class="miniBtn danger" data-action="winClear" data-roomid="${r.id}" data-face="${winfo.face}">창 지우기</button>
-              </span>
-            </div>
-          `;
-          row.appendChild(box);
-        });
-
-        card.appendChild(row);
-
-        const note = document.createElement('div');
-        const hasAnyWin = r.winPlaced;
-        if (!hasAnyWin && (r.winTotal||0) > 0){
-          note.className = 'note';
-          note.textContent = 'ℹ 창면적은 입력됐지만, 창(사각형)은 아직 없어요. 입면에서 [+ 창]을 눌러 추가하면 3D에도 반영됩니다.';
+      // 예외 4: 대통령령으로 정하는 대수선
+      if (action==="대수선" && decision !== "REPORT_IN_LIEU"){
+        path.push("예외(대통령령 대수선) 체크");
+        if (mrDecree){
+          decision = "REPORT_IN_LIEU";
+          reason.push("예외: 대통령령으로 정하는 대수선에 해당 체크됨 -> ‘신고로 허가를 갈음’ 가능 구간.");
+          path.push("대통령령 대수선 체크됨 -> 신고(허가 갈음)");
         } else {
-          note.className = anyInvalid ? 'warn' : 'good';
-          note.textContent = anyInvalid
-            ? '⚠ 어떤 창은 벽 밖으로 나가요. (가로/세로 또는 x/sill 확인)'
-            : '✓ 창 배치가 정상 범위로 보입니다.';
-        }
-        card.appendChild(note);
-
-        grid.appendChild(card);
-      });
-    }
-
-    // -----------------------------
-    // ✅ 입면에서 창 추가/삭제 (프롬프트 기반)
-    // -----------------------------
-    function getRoomById(id){
-      const rid = parseInt(id,10);
-      return globalData.find(r => r.id === rid) || null;
-    }
-    function wallWidthForFace(room, face){
-      if (face === 'front' || face === 'back') return room.w;
-      return room.d;
-    }
-    function faceLabel(face){
-      if (face==='front') return '앞';
-      if (face==='back') return '뒤';
-      if (face==='left') return '좌';
-      if (face==='right') return '우';
-      return face;
-    }
-
-    function promptNumber(msg, defVal){
-      const s = prompt(msg, (defVal===null || defVal===undefined) ? '' : String(defVal));
-      if (s === null) return null;
-      const n = parseFloat(numOnly(s));
-      if (!isFinite(n) || n <= 0) return NaN;
-      return n;
-    }
-
-    function addWindowWizard(room, face){
-      ensureRoomWindows(room);
-
-      const wallW = wallWidthForFace(room, face);
-      const wallH = room.h;
-
-      const defaultW = clamp(1.2, 0.3, wallW*0.9);
-      const defaultH = clamp(1.2, 0.3, wallH*0.8);
-
-      const ww0 = promptNumber(`[${room.name} / ${faceLabel(face)}면]\n창 가로(m) 입력`, defaultW.toFixed(2));
-      if (ww0 === null) return;
-      if (!isFinite(ww0) || ww0 <= 0){ alert('가로 값이 올바르지 않아요.'); return; }
-
-      const wh0 = promptNumber(`[${room.name} / ${faceLabel(face)}면]\n창 세로(m) 입력`, defaultH.toFixed(2));
-      if (wh0 === null) return;
-      if (!isFinite(wh0) || wh0 <= 0){ alert('세로 값이 올바르지 않아요.'); return; }
-
-      const ww = clamp(ww0, 0.2, wallW*0.98);
-      const wh = clamp(wh0, 0.2, wallH*0.98);
-
-      const xAsk = prompt(`[선택] 왼쪽 끝에서 x(m)\n비우면 자동 정중앙`, '');
-      if (xAsk === null) return;
-      let x = parseFloat(numOnly(xAsk));
-      if (!isFinite(x)) x = (wallW - ww) / 2;
-      x = clamp(x, 0, Math.max(0, wallW - ww));
-
-      const sillAsk = prompt(`[선택] 창턱 sill(m)\n비우면 기본 0.9m`, '');
-      if (sillAsk === null) return;
-      let sill = parseFloat(numOnly(sillAsk));
-      if (!isFinite(sill)) sill = 0.9;
-      sill = clamp(sill, 0, Math.max(0, wallH - wh));
-
-      const existing = room.windows[face]?.length || 0;
-      if (existing > 0){
-        const rep = confirm(`[${room.name} / ${faceLabel(face)}면]\n이미 창이 ${existing}개 있어요.\n확인=교체(기존 삭제), 취소=추가(기존 유지)`);
-        if (rep) room.windows[face] = [];
-      }
-
-      room.windows[face].push({ w: +ww.toFixed(3), h: +wh.toFixed(3), x: +x.toFixed(3), sill: +sill.toFixed(3) });
-      ensureRoomWindows(room);
-
-      // ✅ 입력 창면적이 0이면, 사각형 면적으로 자동 채워줌(초보용)
-      if (!(room.winTotal > 0)){
-        room.winTotal = rectAreaSum(room);
-      }
-
-      buildElevation();
-    }
-
-    function clearWindowsOnFace(room, face){
-      ensureRoomWindows(room);
-      const cnt = room.windows[face]?.length || 0;
-      if (!cnt){ alert('지울 창이 없어요.'); return; }
-      if (!confirm(`[${room.name} / ${faceLabel(face)}면] 창 ${cnt}개를 지울까요?`)) return;
-      room.windows[face] = [];
-      ensureRoomWindows(room);
-      buildElevation();
-    }
-
-    elev.addEventListener('click', (e)=>{
-      const t = e.target.closest('[data-action]');
-      if (!t) return;
-      const action = t.dataset.action;
-      const roomId = t.dataset.roomid;
-      const face = t.dataset.face;
-      const room = getRoomById(roomId);
-      if (!room) return;
-
-      if (action === 'winAdd'){
-        addWindowWizard(room, face);
-      }
-      if (action === 'winClear'){
-        clearWindowsOnFace(room, face);
-      }
-    });
-
-    // -----------------------------
-    // 5) 3D
-    // -----------------------------
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf2f2f2);
-
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(12, 12, 16);
-    camera.lookAt(0,0,0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    threeEl.appendChild(renderer.domElement);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.85);
-    dir.position.set(50, 80, 50);
-    dir.castShadow = true;
-    scene.add(dir);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    scene.add(new THREE.GridHelper(100,100,0xbbbbbb,0xeeeeee));
-
-    let pieces = [], ghosts = [], hitMeshes = [], labels3D = [];
-    let labelsVisible = true, ghostsVisible = true;
-    let shiftDown = false;
-
-    const raycaster = new THREE.Raycaster();
-    const dragPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
-    const dragOffset = new THREE.Vector3();
-    let dragging = false;
-    let draggedGroup = null;
-
-    function makeLabelSprite(text1, text2){
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      ctx.font = 'bold 40px Malgun Gothic';
-      const w = ctx.measureText(text1).width + 70;
-      canvas.width = Math.max(220, w);
-      canvas.height = 120;
-      ctx.fillStyle = 'rgba(255,255,255,0.88)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.strokeStyle = '#111827';
-      ctx.lineWidth = 5;
-      ctx.strokeRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = '#111';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = 'bold 38px Malgun Gothic';
-      ctx.fillText(text1, canvas.width/2, 42);
-      ctx.font = '26px Malgun Gothic';
-      ctx.fillText(text2, canvas.width/2, 86);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent:true }));
-      sprite.scale.set(canvas.width/20, 6, 1);
-      return sprite;
-    }
-
-    function addWindowRectOnFace(group, face, roomW, roomD, roomH, win){
-      const wallW = (face==='front' || face==='back') ? roomW : roomD;
-
-      const ww = parseFloat(win.w)||0;
-      const wh = parseFloat(win.h)||0;
-      let x = parseFloat(win.x);
-      let sill = parseFloat(win.sill);
-
-      if (!isFinite(x)) x = (wallW - ww) / 2;
-      if (!isFinite(sill)) sill = 0.9;
-
-      const chk = validateWindowRect(wallW, roomH, {w:ww,h:wh,x,sill});
-      const invalid = !chk.ok;
-
-      const mat = new THREE.MeshBasicMaterial({
-        color: invalid ? 0xff4d4d : 0x66ccff,
-        transparent: true,
-        opacity: invalid ? 0.45 : 0.32,
-        side: THREE.DoubleSide
-      });
-
-      const geo = new THREE.PlaneGeometry(ww, wh);
-      const mesh = new THREE.Mesh(geo, mat);
-      const eps = 0.002;
-
-      const y = sill + wh/2;
-
-      if (face === 'front'){
-        const cx = (-roomW/2) + x + ww/2;
-        mesh.position.set(cx, y, -(roomD/2) + eps);
-        mesh.rotation.y = 0;
-      } else if (face === 'back'){
-        const cx = (-roomW/2) + x + ww/2;
-        mesh.position.set(cx, y, (roomD/2) - eps);
-        mesh.rotation.y = Math.PI;
-      } else if (face === 'left'){
-        const cz = (-roomD/2) + x + ww/2;
-        mesh.position.set(-(roomW/2) + eps, y, cz);
-        mesh.rotation.y = -Math.PI/2;
-      } else if (face === 'right'){
-        const cz = (-roomD/2) + x + ww/2;
-        mesh.position.set((roomW/2) - eps, y, cz);
-        mesh.rotation.y = Math.PI/2;
-      }
-
-      group.add(mesh);
-
-      const edge = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geo),
-        new THREE.LineBasicMaterial({ color: invalid ? 0x7f0000 : 0x0b4aa2 })
-      );
-      edge.position.copy(mesh.position);
-      edge.rotation.copy(mesh.rotation);
-      group.add(edge);
-
-      return invalid;
-    }
-
-    function create3DRoom(d, colorHex, wallT){
-      ensureRoomWindows(d);
-
-      const group = new THREE.Group();
-      const w = d.w, depth = d.d, h = d.h;
-      const t = wallT;
-
-      const matColor = new THREE.Color(colorHex);
-
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, depth),
-        new THREE.MeshStandardMaterial({ color: matColor, side: THREE.DoubleSide })
-      );
-      floor.rotation.x = -Math.PI/2;
-      floor.position.y = 0.01;
-      floor.receiveShadow = true;
-      group.add(floor);
-
-      const wallMat = new THREE.MeshStandardMaterial({ color: matColor, roughness:0.75, transparent:true, opacity:0.88 });
-
-      const front = new THREE.Mesh(new THREE.BoxGeometry(w + 2*t, h, t), wallMat);
-      front.position.set(0, h/2, -(depth/2 + t/2));
-      group.add(front);
-
-      const back = front.clone();
-      back.position.set(0, h/2, +(depth/2 + t/2));
-      group.add(back);
-
-      const side = new THREE.Mesh(new THREE.BoxGeometry(t, h, depth + 2*t), wallMat);
-      side.position.set(-(w/2 + t/2), h/2, 0);
-      group.add(side);
-
-      const side2 = side.clone();
-      side2.position.set(+(w/2 + t/2), h/2, 0);
-      group.add(side2);
-
-      // ✅ 창(사각형): 실제 창만 표시
-      let anyInvalid = false;
-      for (const face of ['front','back','left','right']){
-        for (const win of (d.windows?.[face] || [])){
-          anyInvalid = addWindowRectOnFace(group, face, w, depth, h, win) || anyInvalid;
+          // keep decision as PERMIT or REVIEW depending earlier
+          if (decision === "PERMIT") path.push("대통령령 대수선 미체크 -> 허가 유지");
         }
       }
 
-      const label = makeLabelSprite(d.name, `(${d.w}×${d.d}×${d.h}m)`);
-      label.position.set(0, h + 2.2, 0);
-      label.visible = labelsVisible;
-      group.add(label);
-      labels3D.push(label);
+      // If still REVIEW due to unknowns, keep it
+      // else, final
+      renderDecision(decision, {
+        action, isUrban, zone, gfa, floors, delta, note,
+        useFrom, useTo, mrDecree, mrNoStructure,
+        reason, path
+      });
 
-      const hit = new THREE.Mesh(
-        new THREE.PlaneGeometry(w, depth),
-        new THREE.MeshBasicMaterial({ visible:false })
-      );
-      hit.rotation.x = -Math.PI/2;
-      hit.position.y = 0.12;
-      hit.userData.parentGroup = group;
-      group.add(hit);
-      hitMeshes.push(hit);
-
-      const winAInput = d.winTotal || 0;
-      const winARects = rectAreaSum(d);
-
-      const floorNet = w * depth;
-      const floorGrossEst = (w + 2*t) * (depth + 2*t);
-      const periInner = (w + depth) * 2;
-      const periOuter = ((w + 2*t) + (depth + 2*t)) * 2;
-      const wallAreaInner = periInner * h;
-      const wallAreaOuter = periOuter * h;
-      const wallNetInner = Math.max(0, wallAreaInner - winAInput);
-      const wallVolEst = periOuter * t * h;
-
-      group.userData = {
-        id: d.id,
-        name: d.name,
-        w, d: depth, h,
-        wallT: t,
-        winTotal: winAInput,
-        winRectsArea: winARects,
-        winPlaced: d.winPlaced,
-        windowInvalid: anyInvalid,
-        metrics: {
-          floorNet, floorGrossEst,
-          periInner, periOuter,
-          wallAreaInner, wallAreaOuter,
-          wallNetInner,
-          wallVolEst
-        },
-        targetPos: new THREE.Vector3(),
-      };
-
-      return group;
+      return { ok:true, missing:[], decision };
     }
 
-    function build3D(){
-      pieces.forEach(p => scene.remove(p));
-      ghosts.forEach(g => scene.remove(g));
-      pieces = []; ghosts = []; hitMeshes = []; labels3D = [];
-      tooltip.style.display = 'none';
+    function renderDecision(decision, ctx){
+      const bullets = [];
+      const a = ctx.action;
+      const isUrbanLabel = ctx.isUrban==="yes" ? "도시지역" : "도시지역 아님";
+      const zoneLabel = ctx.isUrban==="no" ? (ctx.zone || "미입력") : "-";
+      const gfaLabel = (ctx.gfa!=null) ? `${ctx.gfa}㎡` : "미입력";
+      const floorsLabel = (ctx.floors!=null) ? `${ctx.floors}층` : "미입력";
 
-      const t = globalWallThicknessM;
+      bullets.push(`행위: ${a}`);
+      bullets.push(`입지: ${isUrbanLabel} / (도시지역 아님인 경우) ${zoneLabel}`);
+      if (a !== "용도변경"){
+        bullets.push(`규모: 연면적 ${gfaLabel}, 층수 ${floorsLabel}`);
+        if (["증축","개축","재축"].includes(a)){
+          bullets.push(`증가 연면적 합계: ${ctx.delta!=null ? ctx.delta+"㎡" : "미입력"}`);
+        }
+        if (a==="대수선"){
+          bullets.push(`대수선 체크: 대통령령 대수선=${ctx.mrDecree ? "예" : "아니오"}, 주요구조부 해체 없음 등=${ctx.mrNoStructure ? "예" : "아니오"}`);
+        }
+      } else {
+        const fromLabel = USE_CATEGORIES.find(x=>x[0]===ctx.useFrom)?.[1] || "미입력";
+        const toLabel = USE_CATEGORIES.find(x=>x[0]===ctx.useTo)?.[1] || "미입력";
+        bullets.push(`용도변경: ${fromLabel} → ${toLabel}`);
+      }
+      if (ctx.note) bullets.push(`메모: ${ctx.note}`);
 
-      let x=0, z=0, rowH=0;
-      const LIMIT = 25;
+      let status="warn", title="🟡 추가검토", short="정보가 더 필요합니다.", why=ctx.reason.join(" ");
+      if (decision==="PERMIT"){
+        status="bad";
+        title="🔴 허가 쪽으로 안내";
+        short="원칙 또는 예외 불충족으로 허가 루트가 유력합니다.";
+      } else if (decision==="REPORT_IN_LIEU"){
+        status="ok";
+        title="🟢 신고(허가 갈음) 쪽으로 안내";
+        short="제14조 예외조건에 걸려 ‘신고로 허가를 갈음’ 가능 구간입니다.";
+      } else if (decision==="REVIEW"){
+        status="warn";
+        title="🟡 추가검토 필요";
+        short="핵심 입력은 있으나, 대통령령/세부용도/요건에 따라 갈립니다.";
+      }
 
-      globalData.forEach(d=>{
-        ensureRoomWindows(d);
+      // show path in bullets as last item
+      bullets.push("의사결정 경로: " + ctx.path.join(" → "));
 
-        const color = EXCEL_COLORS[(d.id-1) % EXCEL_COLORS.length] || "#ccc";
-        const g = create3DRoom(d, color, t);
+      renderResult({ status, title, short, why, bullets, path: ctx.path });
+    }
 
-        if (x + d.w > LIMIT){ x=0; z += rowH + 0.6; rowH=0; }
+    function renderResult({status, title, short, why, bullets}){
+      const pill = $("resultPill");
+      pill.classList.remove("ok","warn","bad");
+      pill.classList.add(status);
+      pill.textContent = title;
 
-        g.userData.targetPos.set(x + d.w/2, 0, z + d.d/2);
-        x += d.w + 0.6;
-        rowH = Math.max(rowH, d.d);
+      $("resultShort").textContent = short || "";
+      $("resultWhy").textContent = why || "";
 
-        const ghost = new THREE.Mesh(
-          new THREE.PlaneGeometry(d.w, d.d),
-          new THREE.MeshBasicMaterial({ color:0x111111, transparent:true, opacity:0.14, side:THREE.DoubleSide })
-        );
-        ghost.rotation.x = -Math.PI/2;
-        ghost.position.copy(g.userData.targetPos);
-        ghost.position.y = 0.005;
-        ghost.visible = ghostsVisible;
-        scene.add(ghost);
-        ghosts.push(ghost);
+      const ul = $("resultBullets");
+      ul.innerHTML = "";
+      (bullets || []).forEach(b=>{
+        const li = document.createElement("li");
+        li.textContent = b;
+        ul.appendChild(li);
+      });
 
-        g.position.set(g.userData.targetPos.x + (Math.random()-0.5)*15, 0, g.userData.targetPos.z + 8 + Math.random()*8);
-        scene.add(g);
-        pieces.push(g);
+      // progress Step5 text
+      $("p5t").textContent = title + " | " + short;
+    }
+
+    function makeSummaryText(){
+      const action = getAction();
+      const isUrban = $("isUrban").value;
+      const zone = $("zone").value;
+      const gfa = $("gfa").value;
+      const floors = $("floors").value;
+      const delta = $("delta").value;
+      const mrDecree = $("mrDecree").checked;
+      const mrNoStructure = $("mrNoStructure").checked;
+      const note = ($("note").value || "").trim();
+
+      const useFrom = $("useFrom").value;
+      const useTo = $("useTo").value;
+      const fromLabel = USE_CATEGORIES.find(x=>x[0]===useFrom)?.[1] || "";
+      const toLabel = USE_CATEGORIES.find(x=>x[0]===useTo)?.[1] || "";
+
+      const pillText = $("resultPill").textContent;
+      const short = $("resultShort").textContent;
+      const bullets = Array.from($("resultBullets").querySelectorAll("li")).map(li=>" - " + li.textContent).join("\n");
+
+      return [
+        "건축허가/신고 빠른판정 요약",
+        "--------------------------------",
+        `결과: ${pillText}`,
+        `한줄요약: ${short}`,
+        "",
+        "[입력값]",
+        `행위: ${action || "미선택"}`,
+        `도시지역: ${isUrban || "미선택"}`,
+        `세부지역(도시지역 아님인 경우): ${zone || "-"}`,
+        `연면적(m²): ${gfa || "-"}`,
+        `층수(지하 제외): ${floors || "-"}`,
+        `증가 연면적 합계(m²): ${delta || "-"}`,
+        `대수선 체크(대통령령): ${mrDecree ? "예" : "아니오"}`,
+        `대수선 체크(주요구조부 해체 없음 등): ${mrNoStructure ? "예" : "아니오"}`,
+        `용도변경: ${fromLabel ? fromLabel : "-"} → ${toLabel ? toLabel : "-"}`,
+        `메모: ${note || "-"}`,
+        "",
+        "[근거/경로]",
+        bullets,
+        "",
+        "주의: 본 도구는 참고용입니다. 최종 판단은 관할청 및 법령/조례/대통령령 세부기준을 확인하세요."
+      ].join("\n");
+    }
+
+    function resetAll(){
+      // radios
+      document.querySelectorAll('input[name="action"]').forEach(r=>r.checked=false);
+
+      $("isUrban").value = "";
+      $("zone").value = "";
+      $("gfa").value = "";
+      $("floors").value = "";
+      $("delta").value = "";
+      $("note").value = "";
+      $("mrDecree").checked = false;
+      $("mrNoStructure").checked = false;
+      $("useFrom").value = "";
+      $("useTo").value = "";
+
+      refreshVisibility();
+      updateProgress(["행위 선택"]);
+      renderResult({
+        status:"warn",
+        title:"🟡 입력 대기",
+        short:"행위를 선택하고 필요한 입력을 채워주세요.",
+        why:"원칙(허가)에서 출발해 예외(신고로 허가 갈음)를 순서대로 체크합니다.",
+        bullets:["초기화되었습니다. 다시 시작해 주세요."]
       });
     }
 
-    // -----------------------------
-    // 6) 모드 스위치
-    // -----------------------------
-    function switchMode(next){
-      if (mode === '2d') save2DPositions();
-      mode = next;
-
-      $('mode2d').classList.toggle('active', mode==='2d');
-      $('mode3d').classList.toggle('active', mode==='3d');
-      $('modeElev').classList.toggle('active', mode==='elev');
-
-      twod.style.display = (mode==='2d') ? 'block' : 'none';
-      threeEl.style.display = (mode==='3d') ? 'block' : 'none';
-      elev.style.display = (mode==='elev') ? 'block' : 'none';
-      tooltip.style.display = 'none';
-
-      if (mode === 'elev') setUiCollapsed(true);
-
-      syncZoomHud();
-      if (mode === '2d') setZoomForMode(twodZoom);
-      if (mode === 'elev') setZoomForMode(elevZoom);
-
-      if (globalData.length){
-        if (mode==='2d') build2D();
-        else if (mode==='3d') build3D();
-        else buildElevation();
-      }
-
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-    }
-
-    $('mode2d').addEventListener('click', ()=>switchMode('2d'));
-    $('mode3d').addEventListener('click', ()=>switchMode('3d'));
-    $('modeElev').addEventListener('click', ()=>switchMode('elev'));
-
-    // -----------------------------
-    // 7) 버튼들
-    // -----------------------------
-    $('resetBtn').addEventListener('click', ()=>{
-      if (confirm('초기화할까요? (입력/도형 모두 삭제)')){
-        hardReset({ clearInput:true });
-        setDefaultStatus();
-      }
+    // ====== Events ======
+    document.addEventListener("change", (e)=>{
+      refreshVisibility();
+      // live judge for user friendliness
+      judge();
     });
 
-    $('clearInputBtn').addEventListener('click', ()=>{ inputEl.value=''; });
-
-    $('sampleBtn').addEventListener('click', ()=>{
-      inputEl.value =
-`공간ID\t공간명\t가로(m)\t세로(m)\t벽높이(m)\t창면적(㎡)
-1\t거실\t5.3\t2.4\t2.3\t3.2
-2\t방1\t2.4\t2.4\t2.3\t0
-3\t방2\t3.8\t5.45\t2.3\t1.5
-4\t복도1\t1.55\t5.55\t2.3\t0
-5\t방3\t2.45\t5.55\t2.3\t2.0`;
-      setStatus(`<b>상태</b><br/>샘플 입력 완료. 이제 <b>[도면 생성]</b>을 눌러보세요. (창 그림은 입면에서 [+ 창])`);
+    $("btnJudge").addEventListener("click", ()=>{
+      judge();
+      toast("판정 업데이트!");
     });
 
-    $('pasteBtn').addEventListener('click', async ()=>{
+    $("btnCopy").addEventListener("click", async ()=>{
+      // ensure latest
+      judge();
+      const text = makeSummaryText();
       try{
-        const t = await navigator.clipboard.readText();
-        if (!t) { alert('클립보드에 텍스트가 없어요.'); return; }
-        inputEl.value = t;
-        setStatus(`<b>상태</b><br/><span class="ok">클립보드 내용 불러오기 완료!</span> 이제 <b>[도면 생성]</b> 누르세요.`);
-      }catch(e){
-        alert('클립보드 접근이 차단됐어요. 직접 붙여넣기(Ctrl+V)로 해주세요.');
-      }
-    });
-
-    $('buildBtn').addEventListener('click', ()=>{
-      const t = getGlobalThickness();
-      const { parsed, skipped } = parseText(inputEl.value || '');
-      if (!parsed.length){
-        setStatus(`<b>상태</b><br/><span class="bad">인식된 방이 0개</span>입니다. 방이름/가로/세로 또는 표 통째로 붙여넣고 다시 눌러주세요.`);
-        return;
-      }
-
-      let nextId = 1;
-      parsed.forEach(r=>{
-        if (!r.id || r.id <= 0) r.id = nextId;
-        nextId = Math.max(nextId, r.id + 1);
-        ensureRoomWindows(r);
-      });
-
-      globalData = parsed;
-
-      const totalFloorNet = globalData.reduce((s,r)=>s + (r.w*r.d), 0);
-      const totalFloorGrossEst = globalData.reduce((s,r)=>s + ((r.w+2*t)*(r.d+2*t)), 0);
-      const totalWallInner = globalData.reduce((s,r)=>s + ((r.w+r.d)*2*r.h), 0);
-      const totalWallOuter = globalData.reduce((s,r)=>s + (((r.w+2*t)+(r.d+2*t))*2*r.h), 0);
-      const totalWinInput = globalData.reduce((s,r)=>s + (r.winTotal||0), 0);
-      const totalWinRects = globalData.reduce((s,r)=>s + rectAreaSum(r), 0);
-      const totalWallNetInner = Math.max(0, totalWallInner - totalWinInput);
-      const totalWallVolEst = globalData.reduce((s,r)=>{
-        const periOuter = ((r.w+2*t)+(r.d+2*t))*2;
-        return s + (periOuter * t * r.h);
-      }, 0);
-
-      const winInputCnt = globalData.filter(r => (r.winTotal||0) > 0).length;
-      const winRectCnt  = globalData.filter(r => rectAreaSum(r) > 0).length;
-
-      setStatus(
-        `<b>상태</b><br/>
-         벽두께: <b>${(t*1000).toFixed(0)}mm</b><br/>
-         방 <b>${globalData.length}</b>개 인식 / 건너뜀 <b>${skipped}</b>줄<br/>
-         순면적(엑셀 동일): <b>${totalFloorNet.toFixed(2)}㎡</b><br/>
-         벽 포함 추정(참고): <b>${totalFloorGrossEst.toFixed(2)}㎡</b><br/>
-         벽면적(내측): <b>${totalWallInner.toFixed(2)}㎡</b> / 창면적(입력): <b>${totalWinInput.toFixed(2)}㎡</b> / 시공면적(내측-창): <b>${totalWallNetInner.toFixed(2)}㎡</b><br/>
-         창(사각형,표시): <b>${totalWinRects.toFixed(2)}㎡</b><br/>
-         벽면적(외측 추정): <b>${totalWallOuter.toFixed(2)}㎡</b> / 벽체부피(추정): <b>${totalWallVolEst.toFixed(2)}㎥</b><br/>
-         <span class="hint">창면적 입력 방 ${winInputCnt}개 · 창(사각형) 입력 방 ${winRectCnt}개 (입면에서 [+ 창])</span>`
-      );
-
-      if (mode==='2d') build2D();
-      else if (mode==='3d') build3D();
-      else buildElevation();
-    });
-
-    // JSON 저장/불러오기
-    $('jsonSaveBtn').addEventListener('click', ()=>{
-      const t = getGlobalThickness();
-      if (!globalData.length){
-        const { parsed } = parseText(inputEl.value || '');
-        if (!parsed.length){ alert('저장할 데이터가 없어요. 먼저 붙여넣고 도면 생성하세요.'); return; }
-        globalData = parsed.map(r=>ensureRoomWindows(r));
-      }
-
-      const payload = {
-        app: "yugy.site",
-        name: "뚱뚜루 도면소생술 방목록",
-        version: "2.41",
-        savedAt: new Date().toISOString(),
-        wallThicknessMm: Math.round(t*1000),
-        rooms: globalData
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ddungdduru_rooms.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      alert('JSON 저장 완료! (다운로드 폴더 확인)');
-    });
-
-    $('jsonLoadBtn').addEventListener('click', ()=> $('jsonFile').click());
-    $('jsonFile').addEventListener('change', async (e)=>{
-      const f = e.target.files?.[0];
-      if (!f) return;
-      try{
-        const text = await f.text();
-        const obj = JSON.parse(text);
-        const rooms = obj.rooms || obj.data || [];
-        if (!Array.isArray(rooms) || !rooms.length) throw new Error('rooms 없음');
-
-        const wt = obj.wallThicknessMm;
-        if (isFinite(wt) && wt > 0){
-          $('wallThk').value = String(wt);
-        }
-        getGlobalThickness();
-
-        // rooms를 직접 로드(창 사각형 포함)
-        globalData = rooms.map((r,i)=>{
-          const rr = {
-            id: r.id ?? (i+1),
-            name: r.name ?? '',
-            w: r.w ?? 0,
-            d: r.d ?? r.depth ?? 0,
-            h: r.h ?? 2.3,
-            winTotal: r.winTotal ?? r.winArea ?? 0,
-            winAreaPlaced: r.winAreaPlaced ?? false,
-            win: r.win ?? {front:0,back:0,left:0,right:0},
-            windows: r.windows ?? makeEmptyWindows(),
-            winPlaced: false,
-            x2d: r.x2d,
-            y2d: r.y2d
-          };
-          return ensureRoomWindows(rr);
-        });
-
-        // 입력창에는 '계산용' 표 형태로만 복원(창 사각형은 JSON에 유지)
-        const lines = [];
-        lines.push("공간ID\t공간명\t가로(m)\t세로(m)\t벽높이(m)\t창면적(㎡)");
-        globalData.forEach((r)=>{
-          lines.push(`${r.id}\t${r.name}\t${r.w}\t${r.d}\t${r.h}\t${r.winTotal||0}`);
-        });
-        inputEl.value = lines.join('\n');
-
-        if (mode==='2d') build2D();
-        else if (mode==='3d') build3D();
-        else buildElevation();
-
-        setStatus(`<b>상태</b><br/><span class="ok">JSON 불러오기 완료!</span> 방 ${globalData.length}개. (창 사각형 포함)`);
+        await navigator.clipboard.writeText(text);
+        toast("결과 요약 복사 완료!");
       }catch(err){
-        alert('JSON 형식이 맞지 않아요. (이 사이트에서 저장한 JSON을 올려주세요)');
-      }finally{
-        e.target.value = '';
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("복사 완료(대체 방식)!");
       }
     });
 
-    // -----------------------------
-    // 8) 3D 인터랙션/툴팁/드래그
-    // -----------------------------
-    function getMouse(e){
-      const rect = renderer.domElement.getBoundingClientRect();
-      return {
-        x: ((e.clientX - rect.left)/rect.width) * 2 - 1,
-        y: -(((e.clientY - rect.top)/rect.height) * 2 - 1)
-      };
-    }
-
-    threeEl.addEventListener('pointerdown', (e)=>{
-      if (mode!=='3d' || !shiftDown) return;
-      const m = getMouse(e);
-      raycaster.setFromCamera(m, camera);
-      const hits = raycaster.intersectObjects(hitMeshes);
-      if (hits.length){
-        dragging = true;
-        draggedGroup = hits[0].object.userData.parentGroup;
-        controls.enabled = false;
-        tooltip.style.display = 'none';
-        renderer.domElement.style.cursor = 'grabbing';
-        raycaster.ray.intersectPlane(dragPlane, dragOffset);
-        dragOffset.sub(draggedGroup.position);
-      }
+    $("btnReset").addEventListener("click", ()=>{
+      resetAll();
+      toast("초기화 완료!");
     });
 
-    threeEl.addEventListener('pointermove', (e)=>{
-      if (mode!=='3d') return;
-
-      const m = getMouse(e);
-      raycaster.setFromCamera(m, camera);
-
-      if (dragging && draggedGroup){
-        const p = new THREE.Vector3();
-        raycaster.ray.intersectPlane(dragPlane, p);
-        draggedGroup.position.copy(p.sub(dragOffset));
-        return;
-      }
-
-      const hits = raycaster.intersectObjects(hitMeshes);
-      if (shiftDown && hits.length) renderer.domElement.style.cursor = 'grab';
-      else renderer.domElement.style.cursor = 'auto';
-
-      if (hits.length){
-        const u = hits[0].object.userData.parentGroup.userData;
-
-        const winTxt = (u.winRectsArea||0) > 0 ? '입력됨' : '없음';
-
-        tooltip.innerHTML =
-          `<b>${u.name}</b>
-           <div class="ttRow"><span class="ttLbl">치수</span><span class="ttVal">${u.w}×${u.d}×${u.h} m</span></div>
-           <div class="ttRow"><span class="ttLbl">벽두께</span><span class="ttVal">${(u.wallT*1000).toFixed(0)} mm</span></div>
-           <div class="ttRow"><span class="ttLbl">바닥(순)</span><span class="ttVal">${u.metrics.floorNet.toFixed(2)} ㎡</span></div>
-           <div class="ttRow"><span class="ttLbl">바닥(벽포함 추정)</span><span class="ttVal">${u.metrics.floorGrossEst.toFixed(2)} ㎡</span></div>
-           <div class="ttRow"><span class="ttLbl">벽면적(내측)</span><span class="ttVal">${u.metrics.wallAreaInner.toFixed(2)} ㎡</span></div>
-           <div class="ttRow"><span class="ttLbl">창면적(입력)</span><span class="ttVal">${(u.winTotal||0).toFixed(2)} ㎡</span></div>
-           <div class="ttRow"><span class="ttLbl">창(사각형)</span><span class="ttVal">${(u.winRectsArea||0).toFixed(2)} ㎡ (${winTxt})</span></div>
-           <div class="ttRow"><span class="ttLbl">시공면적(내측-창)</span><span class="ttVal">${u.metrics.wallNetInner.toFixed(2)} ㎡</span></div>
-           <div class="ttRow"><span class="ttLbl">벽체부피(추정)</span><span class="ttVal">${u.metrics.wallVolEst.toFixed(2)} ㎥</span></div>
-          `;
-        tooltip.style.display = 'block';
-        tooltip.style.left = (e.clientX + 14) + 'px';
-        tooltip.style.top  = (e.clientY + 14) + 'px';
-      }else{
-        tooltip.style.display = 'none';
-      }
-    });
-
-    function endDrag(){
-      if (dragging && draggedGroup){
-        const t = draggedGroup.userData.targetPos;
-        if (draggedGroup.position.distanceTo(t) < 0.5) draggedGroup.position.copy(t);
-      }
-      dragging = false;
-      draggedGroup = null;
-      controls.enabled = true;
-      renderer.domElement.style.cursor = shiftDown ? 'grab' : 'auto';
-    }
-    threeEl.addEventListener('pointerup', endDrag);
-    threeEl.addEventListener('pointerleave', endDrag);
-
-    // -----------------------------
-    // 9) 단축키: P 캡처 + 줌 보조
-    // -----------------------------
-    window.addEventListener('keydown', (e)=>{
-      const k = e.key.toLowerCase();
-      if (k==='shift') shiftDown = true;
-
-      if (mode==='2d' || mode==='elev'){
-        if (k==='+' || k==='=' ) setZoomForMode((mode==='2d'?twodZoom:elevZoom) * 1.12);
-        if (k==='-' || k==='_' ) setZoomForMode((mode==='2d'?twodZoom:elevZoom) * 0.90);
-        if (k==='0') setZoomForMode(1);
-      }
-
-      if (k==='p'){
-        if (mode==='2d'){
-          html2canvas(twod).then((c)=>{
-            const a = document.createElement('a');
-            a.download = '2D_Plan.png';
-            a.href = c.toDataURL('image/png');
-            a.click();
-          });
-        } else if (mode==='elev'){
-          html2canvas(elev).then((c)=>{
-            const a = document.createElement('a');
-            a.download = 'Elevation.png';
-            a.href = c.toDataURL('image/png');
-            a.click();
-          });
-        } else {
-          renderer.render(scene, camera);
-          const a = document.createElement('a');
-          a.download = '3D_View.png';
-          a.href = renderer.domElement.toDataURL('image/png');
-          a.click();
-        }
-      }
-
-      if (mode==='3d'){
-        if (k==='g'){ ghostsVisible = !ghostsVisible; ghosts.forEach(x=>x.visible=ghostsVisible); }
-        if (k==='l'){ labelsVisible = !labelsVisible; labels3D.forEach(x=>x.visible=labelsVisible); }
-      }
-    });
-    window.addEventListener('keyup', (e)=>{
-      if (e.key === 'Shift'){
-        shiftDown = false;
-        renderer.domElement.style.cursor = 'auto';
-      }
-    });
-
-    // -----------------------------
-    // 10) 리사이즈/애니메이션
-    // -----------------------------
-    window.addEventListener('resize', ()=>{
-      calcUiHide();
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      if (mode==='2d') build2D();
-      if (mode==='elev') buildElevation();
-    });
-
-    function animate(){
-      requestAnimationFrame(animate);
-      if (mode==='3d'){
-        controls.update();
-        renderer.render(scene, camera);
-      }
-    }
-    animate();
-
-    // 시작
-    calcUiHide();
-    applyUiCollapsed();
-    getGlobalThickness();
-    setDefaultStatus();
-
-    attachWheelZoom(twod, '2d');
-    attachWheelZoom(elev, 'elev');
-    attachPinchZoom(twod, ()=>twodZoom, (z)=>{ if(mode!=='2d') return; setZoomForMode(z); });
-    attachPinchZoom(elev, ()=>elevZoom, (z)=>{ if(mode!=='elev') return; setZoomForMode(z); });
-
-    switchMode('3d');
-    maybeAutoClearOnReload();
+    // initial
+    refreshVisibility();
+    updateProgress(["행위 선택"]);
   </script>
 </body>
 </html>

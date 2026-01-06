@@ -1,729 +1,660 @@
 <!doctype html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>대수선 허가/신고 판정기 (MVP)</title>
   <style>
-    /* =========================
-       THEME TOKENS
-    ========================== */
     :root{
-      --bg0:#f6f8ff;
-      --bg1:#eef2f7;
+      --bg:#f6f8fc;
       --card:#ffffff;
-      --card2:#fbfcff;
       --ink:#0f172a;
       --muted:#475569;
-      --line:#dbe3ef;
-      --line2:#e7edf7;
-      --shadow: 0 10px 28px rgba(15, 23, 42, .08);
-      --shadow2: 0 6px 18px rgba(15, 23, 42, .08);
+      --line:#e2e8f0;
+      --soft:#f1f5f9;
+      --accent:#2563eb;
+      --accent2:#06b6d4;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#dc2626;
+      --shadow: 0 12px 30px rgba(15,23,42,.08);
       --radius: 18px;
-
-      --accent:#2563eb;   /* blue */
-      --accent2:#14b8a6;  /* teal */
-      --warn:#f59e0b;     /* amber */
-      --danger:#ef4444;   /* red */
-      --ok:#16a34a;       /* green */
-
-      --field-bg:#f8fafc;
-      --field-ink:#0b1220;
-      --field-muted:#64748b;
-      --field-focus: rgba(37, 99, 235, .25);
-
-      --pill:#eef2ff;
-      --pill-ink:#1e3a8a;
-
-      --focus-ring: 0 0 0 4px var(--field-focus);
     }
 
-    /* Dark theme (optional toggle) */
-    html[data-theme="dark"]{
-      --bg0:#0b1220;
-      --bg1:#0b1629;
-      --card:#0f1b2e;
-      --card2:#0d182a;
-      --ink:#e7eefc;
-      --muted:#a9b6cf;
-      --line:#203353;
-      --line2:#1b2d4c;
-      --shadow: 0 18px 40px rgba(0,0,0,.35);
-      --shadow2: 0 10px 26px rgba(0,0,0,.30);
-
-      --field-bg:#0b1628;
-      --field-ink:#eaf1ff;
-      --field-muted:#a4b3d3;
-      --pill:#132b5c;
-      --pill-ink:#cfe0ff;
-      --focus-ring: 0 0 0 4px rgba(96,165,250,.25);
-    }
-
-    /* =========================
-       BASE
-    ========================== */
-    *{ box-sizing: border-box; }
+    *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(37, 99, 235, .12), transparent 60%),
-        radial-gradient(900px 500px at 80% 10%, rgba(20, 184, 166, .10), transparent 55%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
-    }
-    a{ color: var(--accent); text-decoration:none; }
-    .wrap{
-      max-width: 1180px;
-      margin: 28px auto 60px;
-      padding: 0 18px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% 0%, #eef2ff 0%, transparent 55%),
+                  radial-gradient(900px 500px at 90% 10%, #ecfeff 0%, transparent 50%),
+                  var(--bg);
+      color:var(--ink);
     }
 
-    /* =========================
-       HEADER
-    ========================== */
-    .topbar{
-      display:flex;
-      gap:14px;
-      align-items: stretch;
-      justify-content: space-between;
-      flex-wrap: wrap;
+    .wrap{
+      max-width: 1200px;
+      margin: 26px auto 56px;
+      padding: 0 16px;
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 16px;
     }
+
+    @media (max-width: 980px){
+      .wrap{grid-template-columns: 1fr; }
+    }
+
+    .topbar{
+      max-width: 1200px;
+      margin: 22px auto 0;
+      padding: 0 16px;
+    }
+
     .hero{
-      flex: 1 1 640px;
-      background: linear-gradient(180deg, var(--card), var(--card2));
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.86));
       border:1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px 18px 16px;
+      padding: 16px 16px 14px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
     }
+
     .hero h1{
-      margin: 0 0 6px;
-      font-size: 20px;
+      font-size: 18px;
+      margin: 0 0 4px;
       letter-spacing: -0.2px;
     }
     .hero p{
       margin: 0;
       color: var(--muted);
-      line-height: 1.55;
-      font-size: 13.5px;
+      font-size: 13px;
+      line-height: 1.45;
     }
     .chips{
-      flex: 0 1 360px;
-      background: linear-gradient(180deg, var(--card), var(--card2));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px;
       display:flex;
-      flex-direction: column;
-      gap:10px;
-      min-width: 270px;
-    }
-    .chipRow{
-      display:flex;
-      gap:10px;
-      flex-wrap: wrap;
-      align-items:center;
+      gap: 8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top: 2px;
     }
     .chip{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 9px 10px;
+      font-size: 12px;
+      padding: 8px 10px;
       border-radius: 999px;
-      border:1px solid var(--line2);
-      background: rgba(255,255,255,.55);
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1;
-      user-select:none;
-    }
-    html[data-theme="dark"] .chip{ background: rgba(0,0,0,.18); }
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background: var(--accent2);
-      box-shadow: 0 0 0 3px rgba(20,184,166,.18);
-    }
-    .dot.warn{ background: var(--warn); box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
-    .dot.gray{ background:#94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,.15); }
-    .tools{
-      display:flex;
-      gap:10px;
-      justify-content: space-between;
-      align-items:center;
-    }
-    .btn{
-      appearance:none;
       border:1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+      white-space:nowrap;
+      display:flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .dot{width:8px;height:8px;border-radius:99px;display:inline-block}
+    .dot.a{background: var(--accent2)}
+    .dot.b{background: var(--accent)}
+    .dot.c{background: #0ea5e9}
+
+    .card{
       background: var(--card);
-      color: var(--ink);
-      border-radius: 12px;
-      padding: 10px 12px;
-      cursor:pointer;
-      font-weight: 700;
-      font-size: 13px;
-      box-shadow: var(--shadow2);
-      transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease;
-    }
-    .btn:hover{ transform: translateY(-1px); }
-    .btn:active{ transform: translateY(0px); box-shadow: none; }
-    .btn.primary{
-      background: linear-gradient(180deg, rgba(37,99,235,.95), rgba(37,99,235,.84));
-      color: #fff;
-      border-color: rgba(37,99,235,.35);
-      box-shadow: 0 14px 30px rgba(37,99,235,.22);
-    }
-    .btn.ghost{
-      background: transparent;
-      box-shadow:none;
-    }
-    .btn.small{ padding: 9px 10px; font-size: 12.5px; border-radius: 999px; }
-    .btnRow{ display:flex; gap:10px; flex-wrap: wrap; }
-
-    /* =========================
-       LAYOUT
-    ========================== */
-    .grid{
-      margin-top: 16px;
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 14px;
-      align-items: start;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    .panel{
-      background: linear-gradient(180deg, var(--card), var(--card2));
       border:1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow: hidden;
+      overflow:hidden;
     }
-    .panelHead{
-      padding: 14px 16px 12px;
-      border-bottom: 1px solid var(--line2);
+    .cardHead{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
       display:flex;
-      align-items: center;
-      justify-content: space-between;
+      align-items:center;
+      justify-content:space-between;
       gap: 10px;
-      flex-wrap: wrap;
     }
-    .panelHead h2{
+    .cardHead h2{
+      font-size: 14px;
       margin:0;
-      font-size: 14.5px;
-      letter-spacing: -0.1px;
+      letter-spacing:-0.1px;
     }
-    .panelHead .sub{
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.35;
-    }
-    .panelBody{ padding: 14px 16px 16px; }
-
-    /* =========================
-       STEPPER
-    ========================== */
-    .stepper{
-      display:flex;
-      gap:10px;
-      flex-wrap: wrap;
-      align-items:center;
-    }
-    .step{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border:1px solid var(--line2);
-      background: rgba(37,99,235,.06);
-      color: var(--muted);
-      font-weight: 800;
-      font-size: 12.5px;
-      user-select:none;
-    }
-    html[data-theme="dark"] .step{ background: rgba(96,165,250,.10); }
-    .step .num{
-      width: 22px; height: 22px;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      background: rgba(37,99,235,.18);
-      color: var(--ink);
-      border:1px solid rgba(37,99,235,.18);
+    .cardHead .sub{
       font-size: 12px;
-    }
-    html[data-theme="dark"] .step .num{ color: #eaf1ff; }
-    .step.active{
-      background: rgba(20,184,166,.12);
-      border-color: rgba(20,184,166,.30);
-      color: var(--ink);
-    }
-    .step.active .num{
-      background: rgba(20,184,166,.22);
-      border-color: rgba(20,184,166,.20);
-    }
-
-    /* =========================
-       FORM (더 밝고, 더 구분되게)
-    ========================== */
-    .hint{
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px dashed rgba(245,158,11,.45);
-      background: rgba(245,158,11,.10);
       color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.5;
-      margin-bottom: 12px;
-    }
-
-    .q{
-      border:1px solid var(--line2);
-      background: var(--field-bg);
-      border-radius: 16px;
-      padding: 12px;
-      margin-bottom: 10px;
-      transition: box-shadow .12s ease, border-color .12s ease, transform .08s ease;
-      position: relative;
-    }
-    .q:hover{ transform: translateY(-1px); }
-    .q:focus-within{
-      border-color: rgba(37,99,235,.45);
-      box-shadow: var(--focus-ring);
-      transform: translateY(-1px);
-    }
-    .q.active{
-      border-color: rgba(20,184,166,.45);
-      box-shadow: 0 0 0 4px rgba(20,184,166,.20);
-    }
-    .qTop{
-      display:flex;
-      align-items: center;
-      justify-content: space-between;
-      gap:10px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-    .qTitle{
-      display:flex;
-      align-items: center;
-      gap:8px;
-      font-weight: 900;
-      font-size: 13px;
-      letter-spacing: -0.1px;
-    }
-    .badge{
-      font-size: 11px;
-      font-weight: 900;
-      color: var(--pill-ink);
-      background: var(--pill);
-      border:1px solid rgba(37,99,235,.20);
-      padding: 6px 8px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-    .qHelp{
-      color: var(--field-muted);
-      font-size: 12.2px;
-      line-height: 1.45;
       margin-top: 2px;
     }
 
-    label{ display:block; font-size: 12px; color: var(--muted); margin: 10px 0 6px; font-weight: 800; }
-    select, input[type="number"], input[type="text"]{
-      width:100%;
-      border-radius: 14px;
+    .content{ padding: 16px; }
+
+    .steps{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbff;
+    }
+    .stepPill{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 8px 10px;
       border:1px solid var(--line);
-      background: var(--card);
-      color: var(--field-ink);
-      padding: 11px 12px;
-      font-size: 13.5px;
-      outline: none;
-      transition: box-shadow .12s ease, border-color .12s ease;
+      border-radius: 999px;
+      background:#ffffff;
+      font-size: 13px;
+      color: var(--muted);
+      user-select:none;
     }
-    select:focus, input:focus{
-      border-color: rgba(37,99,235,.55);
-      box-shadow: var(--focus-ring);
+    .stepPill.active{
+      border-color: rgba(37,99,235,.35);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+      color: var(--ink);
     }
-    .row2{
+    .stepNum{
+      width: 22px; height: 22px;
+      border-radius: 99px;
+      display:grid; place-items:center;
+      background: #e8f0ff;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .navBtns{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+    button{
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    button.primary{
+      background: var(--accent);
+      border-color: rgba(37,99,235,.4);
+      color:#fff;
+    }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    .grid2{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 12px;
     }
-    @media (max-width: 560px){
-      .row2{ grid-template-columns: 1fr; }
+    @media (max-width: 740px){
+      .grid2{grid-template-columns:1fr}
     }
-    .inlineNote{
-      margin-top: 8px;
+
+    .field{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+    }
+    .field.blue{
+      border-color: rgba(37,99,235,.25);
+    }
+    .field.blue:focus-within{
+      border-color: rgba(37,99,235,.60);
+      box-shadow: 0 0 0 5px rgba(37,99,235,.12);
+    }
+    label{
+      display:block;
+      font-size: 12px;
       color: var(--muted);
-      font-size: 12.2px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+    input, select{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-size: 14px;
+      background:#fff;
+      color: var(--ink);
+      outline:none;
+    }
+    input:focus, select:focus{
+      border-color: rgba(6,182,212,.65);
+      box-shadow: 0 0 0 4px rgba(6,182,212,.12);
+    }
+
+    .notice{
+      padding: 12px;
+      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid rgba(245,158,11,.35);
+      color: #7c2d12;
+      font-size: 13px;
+      line-height: 1.45;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .notice .badge{
+      flex: 0 0 auto;
+      width: 22px; height: 22px;
+      border-radius: 99px;
+      display:grid; place-items:center;
+      background: rgba(245,158,11,.15);
+      border: 1px solid rgba(245,158,11,.25);
+      font-weight: 900;
+    }
+
+    .resultBanner{
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+    .resultBanner h3{
+      margin: 0 0 6px;
+      font-size: 15px;
+      letter-spacing:-0.1px;
+    }
+    .resultBanner p{
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
       line-height: 1.45;
     }
 
-    /* =========================
-       RESULT
-    ========================== */
-    .result{
-      border-radius: 16px;
-      border: 1px solid var(--line2);
-      background: linear-gradient(180deg, var(--card), var(--card2));
-      padding: 14px;
-      margin-top: 10px;
+    .status{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      border:1px solid var(--line);
+      background:#fff;
     }
-    .callout{
-      border-radius: 16px;
-      padding: 12px 12px;
-      border: 1px solid var(--line2);
-      background: rgba(37,99,235,.06);
-    }
-    .callout h3{ margin:0 0 6px; font-size: 14px; letter-spacing:-0.1px; }
-    .callout p{ margin:0; color: var(--muted); font-size: 12.8px; line-height: 1.55; }
-    .callout.ok{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.25); }
-    .callout.warn{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.25); }
-    .callout.danger{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25); }
+    .status.good{color: #0b5d2a; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08)}
+    .status.warn{color: #7a4b00; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10)}
+    .status.neutral{color: #0f172a; border-color: rgba(2,132,199,.25); background: rgba(2,132,199,.07)}
+    .status.bad{color: #7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.08)}
 
     .list{
       margin: 10px 0 0;
-      padding-left: 16px;
-      color: var(--muted);
-      font-size: 12.8px;
-      line-height: 1.55;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border:1px solid var(--line2);
-      background: rgba(20,184,166,.10);
+      padding-left: 18px;
       color: var(--ink);
-      font-weight: 900;
-      font-size: 12.3px;
+      font-size: 13px;
+      line-height: 1.5;
     }
-    .pill .mini{ width:9px; height:9px; border-radius: 999px; background: var(--accent2); }
-    .pill.gray{ background: rgba(148,163,184,.12); color: var(--muted); }
-    .pill.gray .mini{ background:#94a3b8; }
-    .pill.amber{ background: rgba(245,158,11,.14); }
-    .pill.amber .mini{ background: var(--warn); }
+    .list li{ margin: 6px 0; }
+    .muted{ color: var(--muted); }
 
-    /* =========================
-       SUMMARY PANEL
-    ========================== */
-    .summaryBox{
-      display:flex;
-      flex-direction: column;
-      gap:10px;
+    .divider{height:1px;background: var(--line); margin: 14px 0;}
+
+    .miniCard{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #ffffff;
+    }
+    .miniTitle{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 900;
+      margin-bottom: 8px;
     }
     .kv{
-      border:1px solid var(--line2);
-      background: var(--field-bg);
-      border-radius: 16px;
-      padding: 12px;
-    }
-    .kv .k{
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 900;
-      margin-bottom: 6px;
-    }
-    .kv .v{
-      font-weight: 900;
-      color: var(--ink);
-      font-size: 13.5px;
-      line-height: 1.35;
-    }
-    .kv .v.muted{ color: var(--muted); font-weight: 800; }
-
-    details{
-      border:1px solid var(--line2);
-      border-radius: 16px;
-      padding: 10px 12px;
-      background: rgba(37,99,235,.05);
-    }
-    details summary{
-      cursor:pointer;
-      font-weight: 900;
+      display:flex;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(148,163,184,.5);
       font-size: 13px;
     }
-    details .inside{
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 12.6px;
-      line-height: 1.55;
+    .kv:last-child{border-bottom:none}
+    .kv b{font-weight:900}
+    .rightSticky{
+      position: sticky;
+      top: 16px;
+      align-self: start;
+    }
+    @media (max-width: 980px){
+      .rightSticky{position: static;}
     }
 
-    .footerNote{
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.6;
+    details{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background:#fff;
+      overflow:hidden;
     }
+    summary{
+      cursor:pointer;
+      padding: 12px 14px;
+      font-weight: 900;
+      font-size: 13px;
+      color: var(--ink);
+      list-style:none;
+      user-select:none;
+      background: #f8fafc;
+      border-bottom:1px solid var(--line);
+    }
+    details[open] summary{border-bottom:1px solid var(--line)}
+    .detailsBody{padding: 12px 14px; font-size: 13px; color: var(--muted); line-height:1.5}
 
-    /* tiny helper */
-    .sr-only{
-      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;
+    .copyArea{
+      width: 100%;
+      height: 170px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      font-size: 12px;
+      background: #0b1220;
+      color: #e5e7eb;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      resize: vertical;
     }
+    .copyRow{display:flex; gap:10px; align-items:center; margin-top: 10px}
+    .copyRow button{flex:0 0 auto}
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+    }
+    .tag.ok{border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.06); color:#0b5d2a}
+    .tag.no{border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.06); color:#7f1d1d}
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="hero">
+  <div class="topbar">
+    <div class="hero">
+      <div>
         <h1>대수선 허가/신고 판정기 (MVP)</h1>
         <p>
-          “허가냐? 신고냐?”를 사용자에게 떠넘기지 않고,
-          <b>공사 사실</b>만 입력하면 <b>대수선 해당 여부</b>와 <b>허가 검토 vs 신고 가능</b>을 자동으로 보여주는 흐름입니다. 🧭
+          사용자는 “공사 사실”만 체크합니다. 도구가 <b>대수선 해당 여부</b>와 <b>허가 vs 신고</b>를 자동 판정하고,
+          <b>신고 가능 범위(시행령 제11조② 체크)</b>에서 어디서 벗어났는지도 보여줍니다.
         </p>
       </div>
-
       <div class="chips">
-        <div class="chipRow" aria-label="상태 배지">
-          <div class="chip"><span class="dot"></span>대수선 범위: 시행령 기준</div>
-          <div class="chip"><span class="dot warn"></span>신고 가능 범위: 시행령 제11조②</div>
-          <div class="chip"><span class="dot gray"></span>MVP: 대수선 우선 구현</div>
+        <span class="chip"><span class="dot a"></span>대수선 범위: 시행령 기준(간이)</span>
+        <span class="chip"><span class="dot b"></span>신고 가능 범위: 시행령 제11조②(간이)</span>
+        <span class="chip"><span class="dot c"></span>MVP: 대수선 중심</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- LEFT -->
+    <div class="card">
+      <div class="cardHead">
+        <div>
+          <h2>의사결정 진행상황</h2>
+          <div class="sub">“허가/신고”를 묻지 않습니다. 공사 사실 입력 → 자동 판정</div>
         </div>
-        <div class="tools">
-          <button class="btn small" id="themeBtn" type="button" title="화면 밝게/어둡게 전환">테마: 라이트</button>
-          <button class="btn small" id="copyBtn" type="button" title="요약을 복사">요약 복사</button>
+        <div class="navBtns">
+          <button id="btnPrev">이전</button>
+          <button id="btnNext" class="primary">다음</button>
         </div>
+      </div>
+
+      <div class="steps">
+        <div class="stepPill active" data-step="1"><span class="stepNum">1</span>기본 정보</div>
+        <div class="stepPill" data-step="2"><span class="stepNum">2</span>대수선/신고 요건</div>
+        <div class="stepPill" data-step="3"><span class="stepNum">3</span>자동 판정 결과</div>
+      </div>
+
+      <div class="content">
+        <!-- STEP 1 -->
+        <section class="step" id="step1">
+          <div class="grid2">
+            <div class="field blue">
+              <label for="useType">용도(건축법 시행령 [별표 1] 기반, 간이 선택)</label>
+              <select id="useType"></select>
+              <div class="hint">
+                지금 MVP는 <b>대수선 허가/신고</b> 흐름을 먼저 고정합니다.<br/>
+                용도는 추후 “용도별 추가 규정/예외”를 붙일 때 키로 쓰기 위해 먼저 받습니다.
+              </div>
+            </div>
+
+            <div class="field blue">
+              <label for="structDemo">공사 과정에서 “주요구조부 해체(철거)”가 있나요?</label>
+              <select id="structDemo">
+                <option value="no">아니요 (해체 없음)</option>
+                <option value="yes">예 (해체 있음)</option>
+                <option value="unknown">모르겠음</option>
+              </select>
+              <div class="hint">
+                <b>신고 가능 범위(시행령 제11조②)</b>는 보통 “해체 없음”을 강하게 요구합니다.<br/>
+                모르겠음이면 결과는 보수적으로 <b>허가 검토</b> 쪽으로 기웁니다.
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px" class="notice">
+            <div class="badge">!</div>
+            <div>
+              <b>입력 방식 안내</b><br/>
+              1) “수선(보수·교체)”은 그대로 고치는 느낌, 2) “변경/증설/해체”는 구조·배치·수량이 달라지는 느낌으로 입력하세요.<br/>
+              이 페이지는 <span class="muted">지자체/조례/사례에 따라 달라질 수 있는 부분</span>이 있어, 최종은 관할과 교차 확인이 필요합니다.
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP 2 -->
+        <section class="step" id="step2" style="display:none">
+          <div class="miniCard" style="margin-bottom:12px">
+            <div class="miniTitle">대수선 트리거 입력</div>
+            <div class="muted" style="font-size:13px; line-height:1.5">
+              아래 항목 중 기준을 넘으면 <b>“대수선 후보”</b>가 됩니다. (MVP 간이 기준)<br/>
+              그리고 <b>“신고 가능 범위(시행령 제11조②)”</b>는 다음을 우선 체크합니다:
+              <ul class="list">
+                <li><b>주요구조부 해체 없음</b></li>
+                <li><b>공사 형태가 수선(보수·교체)</b> 위주 (변경/증설/해체면 신고에서 탈락)</li>
+                <li><b>신고에 포함되는 항목만</b>으로 구성 (MVP 기준: 내력벽/기둥/보/지붕틀 중심)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <!-- 내력벽 -->
+            <div class="field blue">
+              <label>내력벽 (기준 예시: 30㎡ 이상이면 대수선 트리거)</label>
+              <select id="bwType">
+                <option value="none">해당 없음</option>
+                <option value="repair">수선(보수·교체)</option>
+                <option value="change">변경(배치/구조 변경)</option>
+                <option value="add">증설(추가 설치)</option>
+                <option value="remove">해체(철거/삭제)</option>
+              </select>
+              <div style="height:8px"></div>
+              <input id="bwAmt" type="number" min="0" step="0.1" placeholder="해당 면적 합계(㎡) 예: 60" />
+              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
+            </div>
+
+            <!-- 기둥 -->
+            <div class="field blue">
+              <label>기둥 (기준 예시: 3개 이상이면 대수선 트리거)</label>
+              <select id="colType">
+                <option value="none">해당 없음</option>
+                <option value="repair">수선(보수·교체)</option>
+                <option value="change">변경(배치/구조 변경)</option>
+                <option value="add">증설(추가 설치)</option>
+                <option value="remove">해체(철거/삭제)</option>
+              </select>
+              <div style="height:8px"></div>
+              <input id="colAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 10" />
+              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
+            </div>
+
+            <!-- 보 -->
+            <div class="field blue">
+              <label>보 (기준 예시: 3개 이상이면 대수선 트리거)</label>
+              <select id="beamType">
+                <option value="none">해당 없음</option>
+                <option value="repair">수선(보수·교체)</option>
+                <option value="change">변경(배치/구조 변경)</option>
+                <option value="add">증설(추가 설치)</option>
+                <option value="remove">해체(철거/삭제)</option>
+              </select>
+              <div style="height:8px"></div>
+              <input id="beamAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 20" />
+              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
+            </div>
+
+            <!-- 지붕틀 -->
+            <div class="field blue">
+              <label>지붕틀 (기준 예시: 3개 이상이면 대수선 트리거)</label>
+              <select id="roofType">
+                <option value="none">해당 없음</option>
+                <option value="repair">수선(보수·교체)</option>
+                <option value="change">변경(배치/구조 변경)</option>
+                <option value="add">증설(추가 설치)</option>
+                <option value="remove">해체(철거/삭제)</option>
+              </select>
+              <div style="height:8px"></div>
+              <input id="roofAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 3" />
+              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
+            </div>
+
+            <!-- 외벽 마감재 (신고에서 제외 처리) -->
+            <div class="field blue">
+              <label>외벽 마감재 (기준 예시: 30㎡ 이상이면 대수선 트리거 “후보”로만 표시)</label>
+              <select id="extType">
+                <option value="none">해당 없음</option>
+                <option value="repair">수선(보수·교체)</option>
+                <option value="change">변경(배치/구조 변경)</option>
+                <option value="add">증설(추가 설치)</option>
+                <option value="remove">해체(철거/삭제)</option>
+              </select>
+              <div style="height:8px"></div>
+              <input id="extAmt" type="number" min="0" step="0.1" placeholder="해당 면적 합계(㎡) 예: 300" />
+              <div class="hint">
+                MVP에서는 <b>‘신고 가능 범위’에서 제외</b>로 처리합니다.
+                (외벽 마감재는 지자체/사례에 따라 해석 분기 가능)
+              </div>
+            </div>
+
+            <div class="field">
+              <label>메모(선택)</label>
+              <input id="memo" type="text" placeholder="예: 내부 철거 포함, 외벽은 동일 재료로 교체 등" />
+              <div class="hint">결과 요약 복사에 같이 포함됩니다.</div>
+            </div>
+          </div>
+
+          <details style="margin-top:12px">
+            <summary>🔧 이 MVP의 “신고 가능 범위(시행령 제11조②)”를 어떻게 판정하나요?</summary>
+            <div class="detailsBody">
+              이 페이지는 “사용자가 법조문을 읽고 선택”하지 않게 하려고, 아래처럼 <b>간이 판정 규칙</b>을 씁니다.<br/><br/>
+              <b>신고 가능</b>으로 판정하려면:
+              <ul class="list">
+                <li>대수선 트리거가 1개 이상 발생(= 대수선 후보)</li>
+                <li>주요구조부 해체 = <b>없음</b></li>
+                <li>트리거가 된 항목들의 공사 형태가 모두 <b>수선(보수·교체)</b></li>
+                <li>트리거가 된 항목이 <b>신고 허용 목록</b>(MVP: 내력벽/기둥/보/지붕틀) 안에 있을 것</li>
+              </ul>
+              위 조건 중 하나라도 깨지면 <b>“대수선 허가 검토 필요”</b>로 내려갑니다.
+              (보수적으로 운영해서 ‘신고인데 허가로 봐야 하는’ 리스크를 줄이는 방향)
+            </div>
+          </details>
+        </section>
+
+        <!-- STEP 3 -->
+        <section class="step" id="step3" style="display:none">
+          <div class="resultBanner" id="resultBanner">
+            <div class="status neutral" id="statusPill">판정 대기</div>
+            <h3 id="resultTitle">입력을 바탕으로 결과가 표시됩니다.</h3>
+            <p id="resultDesc" class="muted">좌측 입력을 바꾸면 결과가 즉시 갱신됩니다.</p>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="miniCard">
+            <div class="miniTitle">대수선 트리거(발생 항목)</div>
+            <div id="triggerList" class="muted">아직 트리거가 없습니다.</div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="miniCard">
+            <div class="miniTitle">신고 가능 범위 체크(시행령 제11조②, 간이)</div>
+            <div id="reportCheck" class="muted">입력 후 자동으로 표시됩니다.</div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="miniCard">
+            <div class="miniTitle">복사 가능한 요약</div>
+            <textarea class="copyArea" id="copyBox" readonly></textarea>
+            <div class="copyRow">
+              <button class="primary" id="btnCopy">요약 복사</button>
+              <span class="muted" id="copyMsg"></span>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
-    <div class="grid">
-      <!-- LEFT: MAIN FLOW -->
-      <div class="panel" id="mainPanel">
-        <div class="panelHead">
-          <div>
-            <h2>의사결정 진행상황</h2>
-            <div class="sub">다음 버튼만 눌러도 흐름이 이어집니다. 입력칸은 <b>밝은 카드</b>로 구분됩니다.</div>
-          </div>
-          <div class="btnRow">
-            <button class="btn" id="prevBtn" type="button">이전</button>
-            <button class="btn primary" id="nextBtn" type="button">다음</button>
-          </div>
-        </div>
-
-        <div class="panelBody">
-          <div class="stepper" role="list" aria-label="단계 표시">
-            <div class="step active" id="stepPill1" role="listitem"><span class="num">1</span>기본 정보</div>
-            <div class="step" id="stepPill2" role="listitem"><span class="num">2</span>공사 사실 체크</div>
-            <div class="step" id="stepPill3" role="listitem"><span class="num">3</span>자동 판정 결과</div>
-          </div>
-
-          <div id="step1" style="margin-top:12px;">
-            <div class="hint">
-              ✅ <b>여기서는 “용도”만 잡습니다.</b><br/>
-              허가/신고를 묻지 않습니다. 그건 도구가 결정합니다.
-            </div>
-
-            <div class="q" data-q="use">
-              <div class="qTop">
-                <div>
-                  <div class="qTitle"><span class="badge">입력 1</span> 건축물 용도 (건축법 시행령 별표1)</div>
-                  <div class="qHelp">대분류를 선택하면 세부 용도가 자동으로 따라옵니다.</div>
-                </div>
-                <span class="pill gray" id="usePill"><span class="mini"></span>미입력</span>
-              </div>
-
-              <div class="row2">
-                <div>
-                  <label for="useCat">용도 대분류</label>
-                  <select id="useCat">
-                    <option value="">선택하세요</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="useDetail">용도 세부</label>
-                  <select id="useDetail" disabled>
-                    <option value="">대분류를 먼저 선택하세요</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="inlineNote">
-                ※ 이 MVP는 “대수선 허가/신고”부터 시작합니다. 신축/증축/용도변경 등은 다음 단계 확장 항목입니다.
-              </div>
-            </div>
-          </div>
-
-          <div id="step2" style="display:none; margin-top:12px;">
-            <div class="hint">
-              ✅ <b>공사 사실만 체크</b>하세요.<br/>
-              “대수선인가?” “신고로 가능한가?”는 아래 입력을 바탕으로 자동판정됩니다.
-            </div>
-
-            <div class="q" data-q="major">
-              <div class="qTop">
-                <div>
-                  <div class="qTitle"><span class="badge">입력 2</span> 주요구조부 해체(철거)가 있나요?</div>
-                  <div class="qHelp">신고 가능 대수선(시행령 제11조②)은 일반적으로 “주요구조부 해체 없음” 조건과 함께 판단합니다.</div>
-                </div>
-                <span class="pill gray" id="majorPill"><span class="mini"></span>미선택</span>
-              </div>
-
-              <label for="majorRemoval">해체 여부</label>
-              <select id="majorRemoval">
-                <option value="">선택</option>
-                <option value="no">아니오 (해체 없음)</option>
-                <option value="yes">예 (해체 있음)</option>
-              </select>
-            </div>
-
-            <!-- Triggers -->
-            <div class="q" data-q="triggers">
-              <div class="qTop">
-                <div>
-                  <div class="qTitle"><span class="badge">입력 3</span> 대수선 트리거 항목</div>
-                  <div class="qHelp">아래 항목 중 “기준 이상”이 있으면 대수선 후보가 됩니다. (MVP용 단순 로직)</div>
-                </div>
-                <span class="pill gray" id="triggerPill"><span class="mini"></span>미입력</span>
-              </div>
-
-              <div class="row2">
-                <div>
-                  <label for="bearingWorkType">내력벽 공사 형태</label>
-                  <select id="bearingWorkType">
-                    <option value="none">해당 없음</option>
-                    <option value="repair">수선(보수·교체)</option>
-                    <option value="change">변경(배치/구조 변경)</option>
-                    <option value="add">증설(추가 설치)</option>
-                    <option value="remove">해체(철거/삭제)</option>
-                  </select>
-                  <label for="bearingArea">내력벽 수선/변경 면적 합계 (m²)</label>
-                  <input id="bearingArea" type="number" min="0" step="0.1" placeholder="예: 30" />
-                  <div class="inlineNote">기준(예시): <b>30m² 이상</b>이면 대수선 트리거</div>
-                </div>
-
-                <div>
-                  <label for="columnWorkType">기둥 공사 형태</label>
-                  <select id="columnWorkType">
-                    <option value="none">해당 없음</option>
-                    <option value="repair">수선(보수·교체)</option>
-                    <option value="change">변경(배치/구조 변경)</option>
-                    <option value="add">증설(추가 설치)</option>
-                    <option value="remove">해체(철거/삭제)</option>
-                  </select>
-                  <label for="columnCount">기둥 수선/변경 개수 (개)</label>
-                  <input id="columnCount" type="number" min="0" step="1" placeholder="예: 3" />
-                  <div class="inlineNote">기준(예시): <b>3개 이상</b>이면 대수선 트리거</div>
-                </div>
-              </div>
-
-              <div class="row2" style="margin-top:10px;">
-                <div>
-                  <label for="beamWorkType">보 공사 형태</label>
-                  <select id="beamWorkType">
-                    <option value="none">해당 없음</option>
-                    <option value="repair">수선(보수·교체)</option>
-                    <option value="change">변경(배치/구조 변경)</option>
-                    <option value="add">증설(추가 설치)</option>
-                    <option value="remove">해체(철거/삭제)</option>
-                  </select>
-                  <label for="beamCount">보 수선/변경 개수 (개)</label>
-                  <input id="beamCount" type="number" min="0" step="1" placeholder="예: 3" />
-                  <div class="inlineNote">기준(예시): <b>3개 이상</b>이면 대수선 트리거</div>
-                </div>
-
-                <div>
-                  <label for="extFinishWorkType">외벽 마감재 공사 형태</label>
-                  <select id="extFinishWorkType">
-                    <option value="none">해당 없음</option>
-                    <option value="repair">수선(보수·교체)</option>
-                    <option value="change">변경(배치/구조 변경)</option>
-                    <option value="add">증설(추가 설치)</option>
-                    <option value="remove">해체(철거/삭제)</option>
-                  </select>
-                  <label for="extFinishArea">외벽 마감재 변경/수선 면적 합계 (m²)</label>
-                  <input id="extFinishArea" type="number" min="0" step="0.1" placeholder="예: 100" />
-                  <div class="inlineNote">기준(예시): <b>30m² 이상</b>이면 대수선 트리거</div>
-                </div>
-              </div>
-
-              <div class="inlineNote" style="margin-top:10px;">
-                ※ 실제 법령 해석은 지자체/조례/사례에 따라 달라질 수 있습니다. 이 페이지는 “입력 구조”와 “흐름”을 먼저 고정하는 MVP입니다.
-              </div>
-            </div>
-          </div>
-
-          <div id="step3" style="display:none; margin-top:12px;">
-            <div class="hint">
-              ✅ 결과는 <b>밝은 상자</b>에, 핵심은 <b>굵은 글씨</b>로 보여줍니다.<br/>
-              글씨가 하얘서 안 보이는 문제를 없애기 위해, 결과 영역은 기본적으로 밝은 배경 + 진한 글자입니다.
-            </div>
-
-            <div class="result" id="resultBox">
-              <div class="callout" id="decisionCallout">
-                <h3 id="decisionTitle">판정 준비 중…</h3>
-                <p id="decisionDesc">좌측 입력을 완료하면 자동으로 판정됩니다.</p>
-              </div>
-
-              <div style="margin-top:12px; display:flex; gap:10px; flex-wrap: wrap;">
-                <span class="pill" id="pillMajor"><span class="mini"></span>주요구조부 해체: -</span>
-                <span class="pill" id="pillTrigger"><span class="mini"></span>대수선 트리거: -</span>
-                <span class="pill" id="pillReport"><span class="mini"></span>신고 가능성: -</span>
-              </div>
-
-              <ul class="list" id="reasonList"></ul>
-
-              <details style="margin-top:12px;">
-                <summary>복사 가능한 요약</summary>
-                <div class="inside">
-                  <pre id="copyText" style="white-space:pre-wrap; margin:10px 0 0; background: rgba(148,163,184,.12); padding:10px; border-radius:12px; border:1px solid var(--line2); color: var(--ink);"></pre>
-                </div>
-              </details>
-
-              <div class="footerNote">
-                ⚠️ <b>주의</b>:
-                본 MVP는 “대수선 판단 흐름”과 “입력 UI”를 먼저 안정화하는 목적입니다.
-                실제 인허가 가능 여부는 관할청 검토, 조례, 구조/방화/피난 등 타 기준과 함께 종합 판단이 필요합니다.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: LIVE SUMMARY -->
-      <div class="panel">
-        <div class="panelHead">
+    <!-- RIGHT -->
+    <div class="rightSticky">
+      <div class="card">
+        <div class="cardHead">
           <div>
             <h2>현재 입력 요약</h2>
-            <div class="sub">“내가 뭘 체크했지?”가 바로 보이게</div>
+            <div class="sub">“내가 뭘 체크했지?” 바로 보이게</div>
           </div>
-          <button class="btn ghost" type="button" id="recalcBtn" title="입력값으로 다시 계산">새로 계산</button>
+          <span class="tag" id="quickTag">대기</span>
         </div>
+        <div class="content">
+          <div class="miniCard">
+            <div class="miniTitle">기본</div>
+            <div class="kv"><span>용도</span><b id="sumUse">-</b></div>
+            <div class="kv"><span>주요구조부 해체</span><b id="sumDemo">-</b></div>
+            <div class="kv"><span>대수선 트리거 개수</span><b id="sumTrig">0</b></div>
+          </div>
 
-        <div class="panelBody">
-          <div class="summaryBox">
-            <div class="kv">
-              <div class="k">용도</div>
-              <div class="v" id="sumUse">미입력</div>
+          <div style="height:12px"></div>
+
+          <div class="miniCard">
+            <div class="miniTitle">체크된 공사 항목</div>
+            <div id="sumItems" class="muted">아직 입력이 없습니다.</div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <details>
+            <summary>📌 MVP 로드맵(다음 확장)</summary>
+            <div class="detailsBody">
+              1) “별표1 용도”에 따라 <b>예외/추가 기준</b> 붙이기<br/>
+              2) “증축/개축/용도변경”까지 흐름 확장<br/>
+              3) 조례/지구단위/방화지구 등 <b>추가 분기</b> 모듈화<br/>
+              4) 결과에 “필요 서류 체크리스트” 출력
             </div>
+          </details>
 
-            <div class="kv">
-              <div class="k">주요구조부 해체</div>
-              <div class="v muted" id="sumMajor">미선택</div>
-            </div>
+          <div style="height:12px"></div>
 
-            <div class="kv">
-              <div class="k">체크된 공사 항목</div>
-              <div class="v muted" id="sumTriggers">아직 없음</div>
-            </div>
-
-            <details>
-              <summary>MVP 로드맵 (다음 확장)</summary>
-              <div class="inside">
-                1) 신축/증축/개축/용도변경 로직<br/>
-                2) 별표1 용도 기반 예외/제한 자동 안내<br/>
-                3) 조례/지구단위/방화지구 등 “동네 룰” 조건 추가
-              </div>
-            </details>
+          <div class="muted" style="font-size:12px; line-height:1.5">
+            ※ 이 도구는 <b>설명용 MVP</b>입니다. 최종 판단은 관할청 해석, 도면, 구조 검토, 사례에 따라 달라질 수 있습니다.
           </div>
         </div>
       </div>
@@ -731,484 +662,450 @@
   </div>
 
 <script>
-  /* =========================
-     1) 용도 데이터 (별표1 기반, MVP용)
-     ========================= */
-  const USES = [
-    { cat: "1. 단독주택", details: ["가. 단독주택", "나. 다중주택", "다. 다가구주택", "라. 공관(公館)"] },
-    { cat: "2. 공동주택", details: ["가. 아파트", "나. 연립주택", "다. 다세대주택", "라. 기숙사(일반/임대형)"] },
-    { cat: "3. 제1종 근린생활시설", details: ["가. 소매점(1,000㎡ 미만)", "나. 휴게음식점/제과점(300㎡ 미만)", "다. 이용원/미용원/목욕장/세탁소", "라. 의원/치과/한의원 등", "마. 탁구장/체육도장(500㎡ 미만)", "바. 공공업무시설(1,000㎡ 미만)", "사. 마을회관 등", "아. 변전소/통신/정수장 등(1,000㎡ 미만)", "자. 소규모 사무소(30㎡ 미만)", "차. 전기차 충전소(1,000㎡ 미만)", "카. 동물병원/미용실(300㎡ 미만)"] },
-    { cat: "4. 제2종 근린생활시설", details: ["가. 공연장(500㎡ 미만)", "나. 종교집회장(500㎡ 미만)", "다. 자동차영업소(1,000㎡ 미만)", "라. 서점", "마. 총포판매소", "바. 사진관/표구점", "사. 게임/체험시설(500㎡ 미만)", "아. 휴게음식점/제과점(300㎡ 이상)", "자. 일반음식점", "차. 장의사/동물위탁관리업 등", "카. 학원/교습소/직업훈련소(500㎡ 미만)", "타. 독서실/기원", "파. 체력단련/골프연습장 등(500㎡ 미만)", "하. 사무소(500㎡ 미만)", "거. 다중생활시설(고시원 등)", "너. 제조업소/수리점(500㎡ 미만)", "더. 단란주점(150㎡ 미만)", "러. 안마시술소/노래연습장", "머. 주문배송시설(500㎡ 미만)", "버. 공유보관시설(1,000㎡ 미만)"] },
-    { cat: "5. 문화 및 집회시설", details: ["가. 공연장(제2종 제외)", "나. 집회장(제2종 제외)", "다. 관람장(관람석 1,000㎡ 이상)", "라. 전시장", "마. 동·식물원"] },
-    { cat: "6. 종교시설", details: ["가. 종교집회장(제2종 제외)", "나. 봉안당"] },
-    { cat: "7. 판매시설", details: ["가. 도매시장", "나. 소매시장", "다. 상점(조건 해당)"] },
-    { cat: "8. 운수시설", details: ["가. 여객자동차터미널", "나. 철도시설", "다. 공항시설", "라. 항만시설", "마. 버티포트", "바. 유사시설"] },
-    { cat: "9. 의료시설", details: ["가. 병원", "나. 격리병원"] },
-    { cat: "10. 교육연구시설", details: ["가. 학교", "나. 교육원", "다. 직업훈련소", "라. 학원/교습소", "마. 연구소", "바. 도서관"] },
-    { cat: "11. 노유자시설", details: ["가. 아동 관련 시설", "나. 노인복지시설", "다. 기타 사회복지/근로복지"] },
-    { cat: "12. 수련시설", details: ["가. 생활권 수련시설", "나. 자연권 수련시설", "다. 유스호스텔", "라. 야영장(제29호 제외)"] },
-    { cat: "13. 운동시설", details: ["가. 운동시설(근생 제외)", "나. 체육관(관람석 1,000㎡ 미만)", "다. 운동장(관람석 1,000㎡ 미만)"] },
-    { cat: "14. 업무시설", details: ["가. 공공업무시설", "나. 일반업무시설(오피스텔 포함)"] },
-    { cat: "15. 숙박시설", details: ["가. 일반/생활숙박", "나. 관광숙박", "다. 다중생활시설(제2종 제외)", "라. 유사시설"] },
-    { cat: "16. 위락시설", details: ["가. 단란주점(제2종 제외)", "나. 유흥주점", "다. 테마파크업 시설", "마. 무도장/무도학원", "바. 카지노"] },
-    { cat: "17. 공장", details: ["공장(별도 분류 제외)"] },
-    { cat: "18. 창고시설", details: ["가. 창고", "나. 하역장", "다. 물류터미널", "라. 집배송 시설"] },
-    { cat: "19. 위험물 저장 및 처리 시설", details: ["가. 주유소/석유판매", "나. LPG 충전/저장", "다. 위험물 제조/저장/취급", "라. 액화가스", "마. 유독물", "바. 고압가스", "사. 도료류", "아. 도시가스 제조", "자. 화약류", "차. 유사시설"] },
-    { cat: "20. 자동차 관련 시설", details: ["가. 주차장", "나. 세차장", "다. 폐차장", "라. 검사장", "마. 매매장", "바. 정비공장", "사. 운전/정비학원", "아. 차고/주기장", "자. 전기차 충전소(근생 제외)"] },
-    { cat: "21. 동물 및 식물 관련 시설", details: ["가. 축사", "나. 가축시설", "다. 도축장", "라. 도계장", "마. 작물재배사", "바. 종묘배양", "사. 온실", "아. 유사시설"] },
-    { cat: "22. 자원순환 관련 시설", details: ["가. 하수 등 처리", "나. 고물상", "다. 폐기물재활용", "라. 폐기물처분", "마. 감량화"] },
-    { cat: "23. 교정시설", details: ["가. 교정시설", "나. 갱생보호시설", "다. 소년원/소년분류심사원"] },
-    { cat: "23의2. 국방·군사시설", details: ["국방·군사시설"] },
-    { cat: "24. 방송통신시설", details: ["가. 방송국", "나. 전신전화국", "다. 촬영소", "라. 통신용 시설", "마. 데이터센터", "바. 유사시설"] },
-    { cat: "25. 발전시설", details: ["발전소(집단에너지 포함)"] },
-    { cat: "26. 묘지 관련 시설", details: ["가. 화장시설", "나. 봉안당", "다. 묘지 부수", "라. 동물 화장/납골"] },
-    { cat: "27. 관광 휴게시설", details: ["가. 야외음악당", "나. 야외극장", "다. 어린이회관", "라. 관망탑", "마. 휴게소", "바. 공원/관광지 부수"] },
-    { cat: "28. 장례시설", details: ["가. 장례식장", "나. 동물 전용 장례식장"] },
-    { cat: "29. 야영장 시설", details: ["야영장 시설(관리동 등 300㎡ 미만)"] }
+  // ---------------------------
+  // 1) 용도 옵션(간이)
+  // ---------------------------
+  const USE_OPTIONS = [
+    { group: "주택", items: [
+      ["single", "1. 단독주택(단독/다가구/다중/공관 등)"],
+      ["multiHouse", "1-나. 다중주택"],
+      ["multiFamily", "1-다. 다가구주택"],
+      ["apartment", "2-가. 공동주택(아파트)"],
+      ["row", "2-나. 공동주택(연립주택)"],
+      ["multiUnit", "2-다. 공동주택(다세대주택)"],
+      ["dorm", "2-라. 기숙사"]
+    ]},
+    { group: "근린생활", items: [
+      ["nhood1", "3. 제1종 근린생활시설"],
+      ["nhood2", "4. 제2종 근린생활시설"]
+    ]},
+    { group: "기타(대표)", items: [
+      ["culture", "5. 문화 및 집회시설"],
+      ["religion", "6. 종교시설"],
+      ["sales", "7. 판매시설"],
+      ["medical", "9. 의료시설"],
+      ["edu", "10. 교육연구시설"],
+      ["elder", "11. 노유자시설"],
+      ["office", "14. 업무시설"],
+      ["lodging", "15. 숙박시설"],
+      ["factory", "17. 공장"],
+      ["warehouse", "18. 창고시설"],
+      ["etc", "기타/미상"]
+    ]}
   ];
 
-  /* =========================
-     2) UI ELEMENTS
-     ========================= */
-  const els = {
-    themeBtn: document.getElementById("themeBtn"),
-    copyBtn: document.getElementById("copyBtn"),
-    recalcBtn: document.getElementById("recalcBtn"),
+  // ---------------------------
+  // 2) 대수선 트리거(간이 규칙)
+  //    + 신고 허용 목록(간이)
+  // ---------------------------
+  const RULES = [
+    {
+      id:"bw", name:"내력벽", unit:"㎡", threshold:30,
+      typeEl:"bwType", amtEl:"bwAmt",
+      reportAllowed:true
+    },
+    {
+      id:"col", name:"기둥", unit:"개", threshold:3,
+      typeEl:"colType", amtEl:"colAmt",
+      reportAllowed:true
+    },
+    {
+      id:"beam", name:"보", unit:"개", threshold:3,
+      typeEl:"beamType", amtEl:"beamAmt",
+      reportAllowed:true
+    },
+    {
+      id:"roof", name:"지붕틀", unit:"개", threshold:3,
+      typeEl:"roofType", amtEl:"roofAmt",
+      reportAllowed:true
+    },
+    {
+      id:"ext", name:"외벽 마감재", unit:"㎡", threshold:30,
+      typeEl:"extType", amtEl:"extAmt",
+      reportAllowed:false // MVP에서 신고 제외 처리
+    }
+  ];
 
-    prevBtn: document.getElementById("prevBtn"),
-    nextBtn: document.getElementById("nextBtn"),
-
-    step1: document.getElementById("step1"),
-    step2: document.getElementById("step2"),
-    step3: document.getElementById("step3"),
-
-    stepPill1: document.getElementById("stepPill1"),
-    stepPill2: document.getElementById("stepPill2"),
-    stepPill3: document.getElementById("stepPill3"),
-
-    useCat: document.getElementById("useCat"),
-    useDetail: document.getElementById("useDetail"),
-
-    majorRemoval: document.getElementById("majorRemoval"),
-
-    bearingWorkType: document.getElementById("bearingWorkType"),
-    bearingArea: document.getElementById("bearingArea"),
-    columnWorkType: document.getElementById("columnWorkType"),
-    columnCount: document.getElementById("columnCount"),
-    beamWorkType: document.getElementById("beamWorkType"),
-    beamCount: document.getElementById("beamCount"),
-    extFinishWorkType: document.getElementById("extFinishWorkType"),
-    extFinishArea: document.getElementById("extFinishArea"),
-
-    sumUse: document.getElementById("sumUse"),
-    sumMajor: document.getElementById("sumMajor"),
-    sumTriggers: document.getElementById("sumTriggers"),
-
-    usePill: document.getElementById("usePill"),
-    majorPill: document.getElementById("majorPill"),
-    triggerPill: document.getElementById("triggerPill"),
-
-    decisionCallout: document.getElementById("decisionCallout"),
-    decisionTitle: document.getElementById("decisionTitle"),
-    decisionDesc: document.getElementById("decisionDesc"),
-    reasonList: document.getElementById("reasonList"),
-
-    pillMajor: document.getElementById("pillMajor"),
-    pillTrigger: document.getElementById("pillTrigger"),
-    pillReport: document.getElementById("pillReport"),
-
-    copyText: document.getElementById("copyText"),
+  // 공사형태 라벨
+  const TYPE_LABEL = {
+    none: "해당 없음",
+    repair: "수선(보수·교체)",
+    change: "변경(배치/구조 변경)",
+    add: "증설(추가 설치)",
+    remove: "해체(철거/삭제)"
   };
 
-  const qs = Array.from(document.querySelectorAll(".q"));
-
-  /* =========================
-     3) STATE
-     ========================= */
+  // ---------------------------
+  // 3) 상태 & 엘리먼트
+  // ---------------------------
   let step = 1;
 
-  const state = {
-    useCat: "",
-    useDetail: "",
-    majorRemoval: "", // yes/no
-    bearingWorkType: "none",
-    bearingArea: 0,
-    columnWorkType: "none",
-    columnCount: 0,
-    beamWorkType: "none",
-    beamCount: 0,
-    extFinishWorkType: "none",
-    extFinishArea: 0,
+  const els = {
+    useType: document.getElementById("useType"),
+    structDemo: document.getElementById("structDemo"),
+    memo: document.getElementById("memo"),
+
+    bwType: document.getElementById("bwType"),
+    bwAmt: document.getElementById("bwAmt"),
+    colType: document.getElementById("colType"),
+    colAmt: document.getElementById("colAmt"),
+    beamType: document.getElementById("beamType"),
+    beamAmt: document.getElementById("beamAmt"),
+    roofType: document.getElementById("roofType"),
+    roofAmt: document.getElementById("roofAmt"),
+    extType: document.getElementById("extType"),
+    extAmt: document.getElementById("extAmt"),
+
+    btnPrev: document.getElementById("btnPrev"),
+    btnNext: document.getElementById("btnNext"),
+    stepPills: Array.from(document.querySelectorAll(".stepPill")),
+    steps: [
+      document.getElementById("step1"),
+      document.getElementById("step2"),
+      document.getElementById("step3")
+    ],
+
+    // results
+    statusPill: document.getElementById("statusPill"),
+    resultTitle: document.getElementById("resultTitle"),
+    resultDesc: document.getElementById("resultDesc"),
+    triggerList: document.getElementById("triggerList"),
+    reportCheck: document.getElementById("reportCheck"),
+    copyBox: document.getElementById("copyBox"),
+    btnCopy: document.getElementById("btnCopy"),
+    copyMsg: document.getElementById("copyMsg"),
+
+    // right summary
+    quickTag: document.getElementById("quickTag"),
+    sumUse: document.getElementById("sumUse"),
+    sumDemo: document.getElementById("sumDemo"),
+    sumTrig: document.getElementById("sumTrig"),
+    sumItems: document.getElementById("sumItems")
   };
 
-  /* =========================
-     4) INIT: populate use categories
-     ========================= */
-  function initUses(){
-    USES.forEach((u) => {
-      const opt = document.createElement("option");
-      opt.value = u.cat;
-      opt.textContent = u.cat;
-      els.useCat.appendChild(opt);
-    });
-  }
-
-  function setStep(n){
-    step = Math.max(1, Math.min(3, n));
-    els.step1.style.display = (step === 1) ? "" : "none";
-    els.step2.style.display = (step === 2) ? "" : "none";
-    els.step3.style.display = (step === 3) ? "" : "none";
-
-    els.stepPill1.classList.toggle("active", step === 1);
-    els.stepPill2.classList.toggle("active", step === 2);
-    els.stepPill3.classList.toggle("active", step === 3);
-
-    els.prevBtn.disabled = (step === 1);
-    els.nextBtn.textContent = (step === 3) ? "완료" : "다음";
-
-    // Step3 들어오면 계산 한번
-    if(step === 3) computeAll();
-  }
-
-  /* =========================
-     5) INPUT HELPERS
-     ========================= */
   function numVal(el){
-    const v = parseFloat(el.value);
-    return isNaN(v) ? 0 : v;
-  }
-  function txt(v){ return (v && String(v).trim().length) ? String(v).trim() : ""; }
-
-  function workLabel(code){
-    const map = {
-      none: "해당 없음",
-      repair: "수선(보수·교체)",
-      change: "변경(배치/구조 변경)",
-      add: "증설(추가 설치)",
-      remove: "해체(철거/삭제)"
-    };
-    return map[code] || "-";
+    const v = parseFloat((el.value || "").toString().trim());
+    return Number.isFinite(v) ? v : 0;
   }
 
-  /* =========================
-     6) MVP LOGIC (단순 판정)
-        - 대수선 트리거: 내력벽 30㎡+, 기둥 3개+, 보 3개+, 외벽마감재 30㎡+
-        - 신고 가능성(대략): 주요구조부 해체 없음 + 트리거 항목의 공사 형태가 "수선" 중심
-          (변경/증설/해체가 섞이면 허가 쪽으로 기울게 표시)
-     ========================= */
-  function evaluate(){
-    const reasons = [];
+  function buildUseOptions(){
+    els.useType.innerHTML = "";
+    USE_OPTIONS.forEach(g=>{
+      const og = document.createElement("optgroup");
+      og.label = g.group;
+      g.items.forEach(([val, label])=>{
+        const o = document.createElement("option");
+        o.value = val; o.textContent = label;
+        og.appendChild(o);
+      });
+      els.useType.appendChild(og);
+    });
+    els.useType.value = "multiUnit";
+  }
+
+  // ---------------------------
+  // 4) 판정 로직
+  // ---------------------------
+  function compute(){
+    const useLabel = els.useType.options[els.useType.selectedIndex]?.textContent || "-";
+    const demo = els.structDemo.value; // no/yes/unknown
+
+    // 트리거 계산
     const triggers = [];
+    const selectedItems = [];
 
-    const majorRemoval = state.majorRemoval; // yes/no/""
-    const majorRemovalYes = (majorRemoval === "yes");
-    const majorRemovalNo  = (majorRemoval === "no");
+    RULES.forEach(r=>{
+      const t = document.getElementById(r.typeEl).value;
+      const a = numVal(document.getElementById(r.amtEl));
 
-    // Trigger checks
-    const bearingHit = (state.bearingArea >= 30 && state.bearingWorkType !== "none");
-    const columnHit  = (state.columnCount >= 3 && state.columnWorkType !== "none");
-    const beamHit    = (state.beamCount >= 3 && state.beamWorkType !== "none");
-    const extHit     = (state.extFinishArea >= 30 && state.extFinishWorkType !== "none");
-
-    if(bearingHit) triggers.push(`내력벽 ${workLabel(state.bearingWorkType)} / ${state.bearingArea}㎡`);
-    if(columnHit)  triggers.push(`기둥 ${workLabel(state.columnWorkType)} / ${state.columnCount}개`);
-    if(beamHit)    triggers.push(`보 ${workLabel(state.beamWorkType)} / ${state.beamCount}개`);
-    if(extHit)     triggers.push(`외벽 마감재 ${workLabel(state.extFinishWorkType)} / ${state.extFinishArea}㎡`);
-
-    const isMajorRenovationCandidate = triggers.length > 0;
-
-    // 신고 가능성(단순)
-    const anyNonRepair =
-      [state.bearingWorkType, state.columnWorkType, state.beamWorkType, state.extFinishWorkType]
-        .some(t => (t === "change" || t === "add" || t === "remove"));
-
-    let reportPossible = false;
-    if(isMajorRenovationCandidate && majorRemovalNo && !anyNonRepair){
-      reportPossible = true;
-    }
-
-    // Decision text
-    let decision = {
-      level: "info", // ok/warn/danger/info
-      title: "판정 준비 중…",
-      desc: "입력값을 더 채우면 결과가 선명해집니다.",
-      reportTag: "-"
-    };
-
-    if(!txt(state.useCat)){
-      reasons.push("용도(별표1)를 선택하지 않아, 후속 자동안내(예외/제한)가 제한됩니다.");
-    }
-
-    if(!txt(state.majorRemoval)){
-      reasons.push("주요구조부 해체 여부가 미선택입니다. 신고 가능성 판단이 약해집니다.");
-    }
-
-    if(!isMajorRenovationCandidate){
-      decision = {
-        level: "warn",
-        title: "현재 입력만으로는 ‘대수선 트리거’가 뚜렷하지 않습니다.",
-        desc: "내력벽/기둥/보/외벽마감재 항목에서 기준 이상이 있으면 대수선 후보가 됩니다.",
-        reportTag: "대수선 후보 아님(현재 입력 기준)"
-      };
-      reasons.push("대수선 트리거 항목이 아직 기준에 도달하지 않았습니다.");
-    } else {
-      // 대수선 후보
-      if(majorRemovalYes){
-        decision = {
-          level: "danger",
-          title: "판정: 대수선 ‘허가(검토)’ 가능성이 큽니다. (해체 포함)",
-          desc: "주요구조부 해체가 있으면 신고 가능 요건을 벗어날 가능성이 커집니다. 관할청/구조검토 등 추가 확인이 필요합니다.",
-          reportTag: "신고 어려움(해체 있음)"
-        };
-        reasons.push("주요구조부 해체(철거)가 있어 신고 요건 충족이 어렵다고 표시합니다.");
-      } else if(reportPossible){
-        decision = {
-          level: "ok",
-          title: "판정: 대수선 ‘신고 가능’ 후보입니다. (단순 조건 충족)",
-          desc: "현재 입력 기준으로는 ‘해체 없음 + 수선 중심’ 패턴이라 신고 가능 쪽으로 안내합니다. 단, 실제 제출 서류·구조·방화 기준은 별도 확인이 필요합니다.",
-          reportTag: "신고 가능 후보"
-        };
-        reasons.push("해체 없음 + 트리거 항목이 ‘수선’ 중심이라 신고 후보로 표시합니다.");
-      } else {
-        decision = {
-          level: "warn",
-          title: "판정: 대수선 ‘허가(검토)’ 쪽으로 기울어집니다.",
-          desc: "트리거는 맞지만, ‘변경/증설/해체’ 형태가 포함되거나 해체 여부가 미선택이면 신고 요건을 벗어날 수 있습니다.",
-          reportTag: "허가 검토 필요"
-        };
-        if(anyNonRepair) reasons.push("트리거 항목 중 ‘변경/증설/해체’가 포함되어 신고 요건을 벗어날 수 있습니다.");
-        if(!majorRemovalNo) reasons.push("주요구조부 해체가 ‘없음’으로 확정되지 않아 신고 판단을 보수적으로 표시합니다.");
+      if(t !== "none" || a > 0){
+        selectedItems.push({
+          id:r.id, name:r.name, type:t, amt:a, unit:r.unit, threshold:r.threshold, reportAllowed:r.reportAllowed
+        });
       }
+
+      // 트리거 조건: 해당 없음이 아니고, 수치가 기준 이상
+      if(t !== "none" && a >= r.threshold){
+        triggers.push({
+          id:r.id, name:r.name, type:t, amt:a, unit:r.unit, threshold:r.threshold, reportAllowed:r.reportAllowed
+        });
+      }
+    });
+
+    const isMajor = triggers.length > 0;
+
+    // 신고 가능(간이): (1) 대수선이어야 함 (2) 주요구조부 해체 없음(no) (3) 트리거된 항목들이 모두 수선(repair)
+    // (4) 트리거된 항목들이 모두 reportAllowed=true 인 목록이어야 함
+    let reportOk = false;
+    let reportReasons = [];
+    let reportChecks = [];
+
+    if(!isMajor){
+      reportOk = false;
+      reportReasons.push("대수선 트리거가 없어 ‘대수선’으로 보기 어렵습니다.");
+    } else {
+      // 2) 해체 체크
+      if(demo !== "no"){
+        reportReasons.push("주요구조부 해체가 있거나(또는 불명) 신고 요건(해체 없음)에 맞지 않습니다.");
+      }
+
+      // 3) 공사 형태 체크
+      const nonRepair = triggers.filter(x => x.type !== "repair");
+      if(nonRepair.length){
+        reportReasons.push("트리거 항목 중 ‘수선’이 아닌 공사(변경/증설/해체)가 포함되어 신고 범위를 벗어날 수 있습니다.");
+      }
+
+      // 4) 신고 허용 항목 체크
+      const notAllowed = triggers.filter(x => !x.reportAllowed);
+      if(notAllowed.length){
+        reportReasons.push("트리거 항목 중 일부가 신고 허용 목록(MVP 기준) 밖입니다.");
+      }
+
+      reportOk = (demo === "no" && nonRepair.length === 0 && notAllowed.length === 0);
     }
 
-    return {
-      triggers,
-      isMajorRenovationCandidate,
-      majorRemovalYes,
-      majorRemovalNo,
-      reportPossible,
-      decision,
-      reasons
-    };
-  }
+    // 신고 체크표 생성(항목별)
+    if(isMajor){
+      reportChecks = triggers.map(tr => {
+        const ok1 = (demo === "no");
+        const ok2 = (tr.type === "repair");
+        const ok3 = tr.reportAllowed;
 
-  /* =========================
-     7) RENDER
-     ========================= */
-  function renderSummary(){
-    const useText = txt(state.useCat) ? `${state.useCat}${txt(state.useDetail) ? " / " + state.useDetail : ""}` : "미입력";
-    els.sumUse.textContent = useText;
+        const ok = ok1 && ok2 && ok3;
+        const why = [];
+        if(!ok1) why.push("해체 없음 요건 불충족");
+        if(!ok2) why.push("수선이 아님");
+        if(!ok3) why.push("신고 허용 목록 밖(MVP)");
+        return { ok, name: tr.name, type: tr.type, amt: tr.amt, unit: tr.unit, why };
+      });
+    }
 
-    const majorText = state.majorRemoval === "yes" ? "해체 있음" :
-                      state.majorRemoval === "no"  ? "해체 없음" : "미선택";
-    els.sumMajor.textContent = majorText;
-    els.sumMajor.classList.toggle("muted", state.majorRemoval === "");
+    // 최종 결론
+    let decision = "WAIT";
+    let title = "입력을 바탕으로 결과가 표시됩니다.";
+    let desc = "좌측 입력을 바꾸면 결과가 즉시 갱신됩니다.";
 
-    const ev = evaluate();
-    els.sumTriggers.textContent = ev.triggers.length ? ev.triggers.join(" · ") : "아직 없음";
-    els.sumTriggers.classList.toggle("muted", ev.triggers.length === 0);
-
-    // small pills on step panels
-    els.usePill.className = "pill " + (txt(state.useCat) ? "" : "gray");
-    els.usePill.innerHTML = `<span class="mini"></span>${txt(state.useCat) ? "입력됨" : "미입력"}`;
-
-    els.majorPill.className = "pill " + (state.majorRemoval ? "" : "gray");
-    els.majorPill.innerHTML = `<span class="mini"></span>${state.majorRemoval ? "선택됨" : "미선택"}`;
-
-    els.triggerPill.className = "pill " + (ev.triggers.length ? "" : "gray");
-    els.triggerPill.innerHTML = `<span class="mini"></span>${ev.triggers.length ? (ev.triggers.length + "개 체크됨") : "미입력"}`;
-  }
-
-  function renderResult(){
-    const ev = evaluate();
-
-    // callout style
-    els.decisionCallout.classList.remove("ok","warn","danger");
-    if(ev.decision.level === "ok") els.decisionCallout.classList.add("ok");
-    else if(ev.decision.level === "danger") els.decisionCallout.classList.add("danger");
-    else if(ev.decision.level === "warn") els.decisionCallout.classList.add("warn");
-
-    els.decisionTitle.textContent = ev.decision.title;
-    els.decisionDesc.textContent  = ev.decision.desc;
-
-    // pills
-    els.pillMajor.innerHTML = `<span class="mini"></span>주요구조부 해체: ${
-      state.majorRemoval === "yes" ? "있음" : state.majorRemoval === "no" ? "없음" : "-"
-    }`;
-    els.pillTrigger.innerHTML = `<span class="mini"></span>대수선 트리거: ${ev.triggers.length ? ev.triggers.length + "개" : "-"}`;
-    els.pillReport.innerHTML = `<span class="mini"></span>신고 가능성: ${ev.decision.reportTag}`;
-
-    // reasons
-    els.reasonList.innerHTML = "";
-    const allReasons = [
-      ...(ev.triggers.length ? [`대수선 트리거(입력 기반): ${ev.triggers.join(" · ")}`] : []),
-      ...ev.reasons
-    ];
-    if(allReasons.length === 0){
-      const li = document.createElement("li");
-      li.textContent = "추가 사유 없음";
-      els.reasonList.appendChild(li);
+    if(!isMajor){
+      decision = "NOT_MAJOR";
+      title = "판정: 대수선 아님(또는 경미 수선 범주일 가능성)";
+      desc = "현재 입력 기준에서는 대수선 트리거가 없습니다. 다만 별도의 허가/신고(용도변경·증축 등)는 다른 로직이 필요합니다.";
+    } else if(reportOk){
+      decision = "REPORT_OK";
+      title = "판정: 대수선 ‘신고’ 가능 후보입니다.";
+      desc = "대수선 트리거는 발생했지만, (해체 없음) + (수선 중심) + (신고 허용 항목) 조건을 만족합니다. 관할청 해석과 서류 요건을 함께 확인하세요.";
     } else {
-      allReasons.forEach(r => {
+      decision = "PERMIT";
+      title = "판정: 대수선 ‘허가’ 검토가 필요합니다. (신고 요건을 벗어남)";
+      desc = "대수선 트리거는 발생했고, 신고 가능 범위(시행령 제11조②, 간이)의 조건을 충족하지 못한 사유가 있습니다.";
+    }
+
+    return { useLabel, demo, triggers, selectedItems, isMajor, reportOk, reportReasons, reportChecks, decision, title, desc };
+  }
+
+  // ---------------------------
+  // 5) 렌더
+  // ---------------------------
+  function setStatus(decision){
+    // pill
+    els.statusPill.className = "status neutral";
+    els.quickTag.className = "tag";
+
+    if(decision === "REPORT_OK"){
+      els.statusPill.className = "status good";
+      els.statusPill.textContent = "대수선 신고 가능 후보";
+      els.quickTag.className = "tag ok";
+      els.quickTag.textContent = "신고 후보";
+    } else if(decision === "PERMIT"){
+      els.statusPill.className = "status warn";
+      els.statusPill.textContent = "대수선 허가 검토";
+      els.quickTag.className = "tag no";
+      els.quickTag.textContent = "허가 검토";
+    } else if(decision === "NOT_MAJOR"){
+      els.statusPill.className = "status neutral";
+      els.statusPill.textContent = "대수선 아님";
+      els.quickTag.className = "tag";
+      els.quickTag.textContent = "대수선 아님";
+    } else {
+      els.statusPill.className = "status neutral";
+      els.statusPill.textContent = "판정 대기";
+      els.quickTag.className = "tag";
+      els.quickTag.textContent = "대기";
+    }
+  }
+
+  function render(){
+    const r = compute();
+
+    // result banner
+    setStatus(r.decision);
+    els.resultTitle.textContent = r.title;
+    els.resultDesc.textContent = r.desc;
+
+    // trigger list
+    if(r.triggers.length === 0){
+      els.triggerList.textContent = "아직 트리거가 없습니다.";
+    } else {
+      const ul = document.createElement("ul");
+      ul.className = "list";
+      r.triggers.forEach(t=>{
         const li = document.createElement("li");
-        li.textContent = r;
-        els.reasonList.appendChild(li);
+        li.innerHTML = `<b>${t.name}</b> · ${TYPE_LABEL[t.type]} · ${t.amt}${t.unit} (기준 ${t.threshold}${t.unit})`;
+        ul.appendChild(li);
       });
+      els.triggerList.innerHTML = "";
+      els.triggerList.appendChild(ul);
     }
 
-    // copy text
-    const useText = txt(state.useCat) ? `${state.useCat}${txt(state.useDetail) ? " / " + state.useDetail : ""}` : "(미입력)";
-    const majorText = state.majorRemoval === "yes" ? "해체 있음" : state.majorRemoval === "no" ? "해체 없음" : "(미선택)";
-    const triText = ev.triggers.length ? ev.triggers.map(t => `- ${t}`).join("\n") : "- (없음)";
-    els.copyText.textContent =
-`[대수선 허가/신고 판정 요약]
-- 용도: ${useText}
-- 주요구조부 해체: ${majorText}
-- 대수선 트리거:
-${triText}
-
-- 결론: ${ev.decision.title}
-- 메모: ${ev.decision.reportTag}
-
-[주의]
-- 본 결과는 ‘입력된 공사 사실’ 기준의 MVP 자동판정입니다.
-- 구조/방화/피난/조례 등 다른 기준은 별도 검토가 필요합니다.`;
-  }
-
-  function computeAll(){
-    renderSummary();
-    renderResult();
-  }
-
-  /* =========================
-     8) EVENTS
-     ========================= */
-  function bindEvents(){
-    // Theme toggle
-    els.themeBtn.addEventListener("click", () => {
-      const html = document.documentElement;
-      const isDark = html.getAttribute("data-theme") === "dark";
-      html.setAttribute("data-theme", isDark ? "light" : "dark");
-      els.themeBtn.textContent = isDark ? "테마: 라이트" : "테마: 다크";
-      computeAll();
-    });
-
-    // Copy
-    els.copyBtn.addEventListener("click", async () => {
-      computeAll();
-      try{
-        await navigator.clipboard.writeText(els.copyText.textContent);
-        els.copyBtn.textContent = "복사 완료!";
-        setTimeout(() => els.copyBtn.textContent = "요약 복사", 1100);
-      }catch(e){
-        alert("복사가 막혔어요. 요약 박스를 드래그해서 복사해 주세요.");
+    // report check
+    if(!r.isMajor){
+      els.reportCheck.innerHTML = `<span class="muted">대수선 트리거가 없으므로 신고/허가 판정 단계로 진입하지 않습니다.</span>`;
+    } else {
+      const parts = [];
+      // 항목별 체크
+      if(r.reportChecks.length){
+        parts.push(`<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+          <span class="tag ${r.demo === "no" ? "ok":"no"}">${r.demo === "no" ? "해체 없음":"해체 있음/불명"}</span>
+          <span class="tag ${r.reportOk ? "ok":"no"}">${r.reportOk ? "신고 요건(간이) 충족":"신고 요건(간이) 미충족"}</span>
+        </div>`);
+        parts.push(`<ul class="list">`);
+        r.reportChecks.forEach(c=>{
+          if(c.ok){
+            parts.push(`<li>✅ <b>${c.name}</b> · ${TYPE_LABEL[c.type]} · ${c.amt}${c.unit} <span class="muted">(신고 후보)</span></li>`);
+          } else {
+            parts.push(`<li>❌ <b>${c.name}</b> · ${TYPE_LABEL[c.type]} · ${c.amt}${c.unit}
+              <div class="muted" style="margin-top:4px; font-size:12px">이유: ${c.why.join(", ")}</div>
+            </li>`);
+          }
+        });
+        parts.push(`</ul>`);
       }
-    });
 
-    els.recalcBtn.addEventListener("click", computeAll);
-
-    // Step nav
-    els.prevBtn.addEventListener("click", () => setStep(step - 1));
-    els.nextBtn.addEventListener("click", () => {
-      if(step < 3) setStep(step + 1);
-      else {
-        computeAll();
-        // 완료 버튼은 현재 MVP에서 “계산 갱신” 역할
-        els.nextBtn.textContent = "완료됨";
-        setTimeout(() => els.nextBtn.textContent = "완료", 900);
-      }
-    });
-
-    // Use category change
-    els.useCat.addEventListener("change", () => {
-      state.useCat = els.useCat.value;
-      state.useDetail = "";
-
-      // populate details
-      els.useDetail.innerHTML = "";
-      const cat = USES.find(u => u.cat === state.useCat);
-
-      if(!cat){
-        els.useDetail.disabled = true;
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "대분류를 먼저 선택하세요";
-        els.useDetail.appendChild(opt);
+      // 왜 신고가 아닌지
+      if(!r.reportOk){
+        const ul2 = document.createElement("ul");
+        ul2.className = "list";
+        r.reportReasons.forEach(x=>{
+          const li = document.createElement("li");
+          li.textContent = x;
+          ul2.appendChild(li);
+        });
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<div class="miniTitle" style="margin-bottom:6px">신고 불가(또는 불리) 사유</div>`;
+        wrap.appendChild(ul2);
+        els.reportCheck.innerHTML = parts.join("");
+        els.reportCheck.appendChild(wrap);
       } else {
-        els.useDetail.disabled = false;
-        const opt0 = document.createElement("option");
-        opt0.value = "";
-        opt0.textContent = "세부 용도 선택(선택사항)";
-        els.useDetail.appendChild(opt0);
-
-        cat.details.forEach(d => {
-          const opt = document.createElement("option");
-          opt.value = d;
-          opt.textContent = d;
-          els.useDetail.appendChild(opt);
-        });
+        els.reportCheck.innerHTML = parts.join("") + `<div class="muted" style="margin-top:8px">※ 관할청 해석/서류요건은 별도 확인이 필요합니다.</div>`;
       }
-      computeAll();
-    });
+    }
 
-    els.useDetail.addEventListener("change", () => {
-      state.useDetail = els.useDetail.value;
-      computeAll();
-    });
+    // right summary
+    els.sumUse.textContent = r.useLabel;
+    els.sumDemo.textContent = (r.demo === "no") ? "해체 없음" : (r.demo === "yes") ? "해체 있음" : "모르겠음";
+    els.sumTrig.textContent = String(r.triggers.length);
 
-    // Major removal
-    els.majorRemoval.addEventListener("change", () => {
-      state.majorRemoval = els.majorRemoval.value;
-      computeAll();
-    });
-
-    // Triggers
-    const onAny = () => {
-      state.bearingWorkType = els.bearingWorkType.value;
-      state.bearingArea = numVal(els.bearingArea);
-
-      state.columnWorkType = els.columnWorkType.value;
-      state.columnCount = Math.max(0, Math.floor(numVal(els.columnCount)));
-
-      state.beamWorkType = els.beamWorkType.value;
-      state.beamCount = Math.max(0, Math.floor(numVal(els.beamCount)));
-
-      state.extFinishWorkType = els.extFinishWorkType.value;
-      state.extFinishArea = numVal(els.extFinishArea);
-
-      computeAll();
-    };
-
-    [
-      els.bearingWorkType, els.bearingArea,
-      els.columnWorkType, els.columnCount,
-      els.beamWorkType, els.beamCount,
-      els.extFinishWorkType, els.extFinishArea
-    ].forEach(el => el.addEventListener("input", onAny));
-
-    // Active question highlight (어느 칸인지 눈에 띄게)
-    qs.forEach(q => {
-      const inputs = q.querySelectorAll("select, input");
-      inputs.forEach(i => {
-        i.addEventListener("focus", () => {
-          qs.forEach(x => x.classList.remove("active"));
-          q.classList.add("active");
-        });
-        i.addEventListener("blur", () => {
-          // blur 후에도 마지막 입력카드가 살짝 남아있게 하고 싶으면 주석 처리 해제
-          // q.classList.remove("active");
-        });
+    if(r.selectedItems.length === 0){
+      els.sumItems.textContent = "아직 입력이 없습니다.";
+    } else {
+      const ul = document.createElement("ul");
+      ul.className = "list";
+      r.selectedItems.forEach(s=>{
+        const amtText = (s.amt > 0) ? ` · ${s.amt}${s.unit}` : "";
+        const li = document.createElement("li");
+        li.innerHTML = `<b>${s.name}</b> · ${TYPE_LABEL[s.type]}${amtText}`;
+        ul.appendChild(li);
       });
-    });
+      els.sumItems.innerHTML = "";
+      els.sumItems.appendChild(ul);
+    }
+
+    // copy summary
+    const lines = [];
+    lines.push("[대수선 허가/신고 판정 요약]");
+    lines.push(`- 용도: ${r.useLabel}`);
+    lines.push(`- 주요구조부 해체: ${els.sumDemo.textContent}`);
+    lines.push(`- 대수선 트리거 개수: ${r.triggers.length}`);
+    lines.push(`- 결과: ${els.statusPill.textContent} / ${r.title}`);
+    lines.push("");
+    if(r.triggers.length){
+      lines.push("[대수선 트리거(발생)]");
+      r.triggers.forEach(t=>{
+        lines.push(`- ${t.name}: ${TYPE_LABEL[t.type]} / ${t.amt}${t.unit} (기준 ${t.threshold}${t.unit})`);
+      });
+      lines.push("");
+    }
+    if(r.isMajor){
+      lines.push("[신고 가능 범위 체크(간이)]");
+      if(r.reportOk){
+        lines.push("- 신고 요건(간이) 충족: 해체 없음 + 수선 중심 + 신고 허용 항목");
+      } else {
+        r.reportReasons.forEach(x=> lines.push(`- ${x}`));
+      }
+      lines.push("");
+    }
+    const memo = (els.memo.value || "").trim();
+    if(memo){
+      lines.push(`[메모] ${memo}`);
+      lines.push("");
+    }
+    lines.push("[주의]");
+    lines.push("- 본 결과는 설명용 MVP(간이 로직)입니다. 지자체/조례/사례/구조검토에 따라 달라질 수 있습니다.");
+
+    els.copyBox.value = lines.join("\n");
   }
 
-  /* =========================
-     9) RUN
-     ========================= */
-  initUses();
-  bindEvents();
-  setStep(1);
-  computeAll();
+  // ---------------------------
+  // 6) 스텝 이동
+  // ---------------------------
+  function showStep(n){
+    step = n;
+    els.steps.forEach((s,i)=> s.style.display = (i === (n-1)) ? "block" : "none");
+    els.stepPills.forEach(p=>{
+      p.classList.toggle("active", Number(p.dataset.step) === n);
+    });
+    els.btnPrev.disabled = (n === 1);
+    els.btnNext.textContent = (n === 3) ? "완료" : "다음";
+    render();
+  }
+
+  els.btnPrev.addEventListener("click", ()=> showStep(Math.max(1, step-1)));
+  els.btnNext.addEventListener("click", ()=>{
+    if(step < 3) showStep(step+1);
+    else showStep(3);
+  });
+
+  els.stepPills.forEach(p=>{
+    p.addEventListener("click", ()=> showStep(Number(p.dataset.step)));
+  });
+
+  // ---------------------------
+  // 7) 이벤트 바인딩
+  // ---------------------------
+  const watch = [
+    els.useType, els.structDemo, els.memo,
+    els.bwType, els.bwAmt,
+    els.colType, els.colAmt,
+    els.beamType, els.beamAmt,
+    els.roofType, els.roofAmt,
+    els.extType, els.extAmt
+  ];
+  watch.forEach(x=> x.addEventListener("input", render));
+  watch.forEach(x=> x.addEventListener("change", render));
+
+  els.btnCopy.addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(els.copyBox.value);
+      els.copyMsg.textContent = "복사 완료!";
+      setTimeout(()=> els.copyMsg.textContent = "", 1500);
+    }catch(e){
+      els.copyMsg.textContent = "복사 실패(브라우저 권한 확인)";
+      setTimeout(()=> els.copyMsg.textContent = "", 2000);
+    }
+  });
+
+  // init
+  buildUseOptions();
+  showStep(1);
 </script>
 </body>
 </html>

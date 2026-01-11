@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>뚱뚜루의 타로 하우스 (3-Card Spread)</title>
+    <title>뚱뚜루의 타로 하우스 (Interactive)</title>
     <style>
         :root {
             --primary-color: #6a1b9a;
@@ -45,12 +45,11 @@
             display: flex;
             gap: 20px;
             justify-content: center;
-            flex-wrap: wrap; /* 모바일에서 줄바꿈 허용 */
+            flex-wrap: wrap;
             width: 100%;
             max-width: 900px;
         }
 
-        /* 개별 카드 영역 (라벨 포함) */
         .card-wrapper {
             display: flex;
             flex-direction: column;
@@ -66,13 +65,18 @@
             letter-spacing: 1px;
         }
 
-        /* 카드 컨테이너 */
         .card-container {
             perspective: 1000px;
             width: 180px;
             height: 280px;
-            cursor: pointer;
+            cursor: pointer; /* 손가락 모양 커서 */
             position: relative;
+        }
+
+        /* 마우스 올렸을 때 살짝 떠오르는 효과 */
+        .card-container:hover .card:not(.flipped) {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(106, 27, 154, 0.6);
         }
 
         .card {
@@ -80,15 +84,14 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.8s;
+            transition: transform 0.6s; /* 뒤집는 속도 */
             border-radius: 12px;
             box-shadow: 0 0 15px rgba(106, 27, 154, 0.3);
         }
 
-        /* 카드가 뒤집혔을 때 */
         .card.flipped {
             transform: rotateY(180deg);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); /* 뒤집히면 금빛 광채 */
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         }
 
         .card-face {
@@ -104,7 +107,7 @@
             border: 1px solid var(--accent-color);
         }
 
-        /* 카드 뒷면 */
+        /* 뒷면 디자인 */
         .card-back {
             background: repeating-linear-gradient(
                 45deg,
@@ -116,8 +119,16 @@
             color: var(--accent-color);
             font-size: 2.5rem;
         }
+        
+        /* 뒷면에 '터치' 유도 문구 */
+        .click-hint {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            opacity: 0.7;
+            font-weight: normal;
+        }
 
-        /* 카드 앞면 */
+        /* 앞면 디자인 */
         .card-front {
             background-color: #2a2a2a;
             transform: rotateY(180deg);
@@ -126,27 +137,10 @@
             border: 2px solid var(--accent-color);
         }
 
-        .card-symbol {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
+        .card-symbol { font-size: 3rem; margin-bottom: 10px; }
+        .card-name { font-size: 1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 8px; word-break: keep-all; }
+        .card-desc { font-size: 0.8rem; line-height: 1.4; color: #ddd; word-break: keep-all; }
 
-        .card-name {
-            font-size: 1rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            margin-bottom: 8px;
-            word-break: keep-all;
-        }
-
-        .card-desc {
-            font-size: 0.8rem;
-            line-height: 1.4;
-            color: #ddd;
-            word-break: keep-all;
-        }
-
-        /* 버튼 및 안내 메시지 */
         .action-area {
             margin-top: 40px;
             height: 60px;
@@ -160,51 +154,51 @@
             font-size: 1.1rem;
             border-radius: 30px;
             cursor: pointer;
-            transition: background 0.3s, transform 0.1s;
+            transition: background 0.3s;
             font-weight: bold;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: none; /* 처음엔 숨김 */
         }
 
-        .btn:hover {
-            background-color: #8e24aa;
-            transform: translateY(-2px);
-        }
+        .btn:hover { background-color: #8e24aa; }
 
-        .btn:active {
-            transform: translateY(0);
-        }
+        footer { margin-top: 50px; font-size: 0.8rem; color: #555; }
 
-        footer {
-            margin-top: 50px;
-            font-size: 0.8rem;
-            color: #555;
-        }
-
-        /* 모바일 대응 */
         @media (max-width: 600px) {
-            .spread-area {
-                flex-direction: column;
-                align-items: center;
-            }
-            .card-container {
-                width: 200px;
-                height: 300px;
-            }
+            .spread-area { flex-direction: column; align-items: center; }
+            .card-container { width: 200px; height: 300px; }
         }
     </style>
 </head>
 <body>
 
     <h1>🔮 뚱뚜루의 타로 하우스</h1>
-    <p class="subtitle">당신의 과거, 현재, 그리고 미래를 비춰봅니다.</p>
+    <p class="subtitle" id="mainStatus">카드를 하나씩 클릭해서 운명을 확인하세요.</p>
 
     <div class="spread-area">
-        
         <div class="card-wrapper">
             <div class="position-label">Past (과거)</div>
-            <div class="card-container">
+            <div class="card-container" onclick="revealCard(0)">
+                <div class="card" id="card0">
+                    <div class="card-face card-back">
+                        ✨<div class="click-hint">Click</div>
+                    </div>
+                    <div class="card-face card-front">
+                        <div class="card-symbol" id="symbol0"></div>
+                        <div class="card-name" id="name0"></div>
+                        <div class="card-desc" id="desc0"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-wrapper">
+            <div class="position-label">Present (현재)</div>
+            <div class="card-container" onclick="revealCard(1)">
                 <div class="card" id="card1">
-                    <div class="card-face card-back">✨</div>
+                    <div class="card-face card-back">
+                        ✨<div class="click-hint">Click</div>
+                    </div>
                     <div class="card-face card-front">
                         <div class="card-symbol" id="symbol1"></div>
                         <div class="card-name" id="name1"></div>
@@ -215,10 +209,12 @@
         </div>
 
         <div class="card-wrapper">
-            <div class="position-label">Present (현재)</div>
-            <div class="card-container">
+            <div class="position-label">Future (미래)</div>
+            <div class="card-container" onclick="revealCard(2)">
                 <div class="card" id="card2">
-                    <div class="card-face card-back">✨</div>
+                    <div class="card-face card-back">
+                        ✨<div class="click-hint">Click</div>
+                    </div>
                     <div class="card-face card-front">
                         <div class="card-symbol" id="symbol2"></div>
                         <div class="card-name" id="name2"></div>
@@ -227,25 +223,10 @@
                 </div>
             </div>
         </div>
-
-        <div class="card-wrapper">
-            <div class="position-label">Future (미래)</div>
-            <div class="card-container">
-                <div class="card" id="card3">
-                    <div class="card-face card-back">✨</div>
-                    <div class="card-face card-front">
-                        <div class="card-symbol" id="symbol3"></div>
-                        <div class="card-name" id="name3"></div>
-                        <div class="card-desc" id="desc3"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <div class="action-area">
-        <button class="btn" id="actionBtn" onclick="handleButtonClick()">운명의 카드 펼치기</button>
+        <button class="btn" id="resetBtn" onclick="resetGame()">다시 섞기</button>
     </div>
 
     <footer>
@@ -253,76 +234,93 @@
     </footer>
 
     <script>
-        // 타로 카드 데이터
         const tarotDeck = [
             { name: "The Fool (바보)", symbol: "🤡", desc: "순수한 시작. 계획 없는 모험이 예상치 못한 즐거움을 줍니다." },
-            { name: "The Magician (마법사)", symbol: "🧙‍♂️", desc: "당신에겐 능력이 있습니다. 아이디어를 현실로 만드세요." },
-            { name: "The Empress (여황제)", symbol: "👑", desc: "풍요로움과 편안함. 당신의 노력이 결실을 맺습니다." },
+            { name: "The Magician (마법사)", symbol: "🧙‍♂️", desc: "창조력 발휘. 당신은 이미 필요한 능력을 가지고 있습니다." },
+            { name: "The Empress (여황제)", symbol: "👑", desc: "풍요와 결실. 편안한 마음으로 흐름을 즐기세요." },
             { name: "The Emperor (황제)", symbol: "🤴", desc: "안정과 권위. 흔들리지 않는 기반을 다질 때입니다." },
-            { name: "The Sun (태양)", symbol: "☀️", desc: "눈부신 성공. 모든 것이 명확해지고 긍정적인 에너지가 넘칩니다." },
-            { name: "The Moon (달)", symbol: "🌙", desc: "불확실함과 불안. 겉모습에 속지 말고 내면을 들여다보세요." },
-            { name: "The Star (별)", symbol: "⭐", desc: "희망과 치유. 어둠이 걷히고 밝은 미래가 보입니다." },
-            { name: "The Tower (탑)", symbol: "⚡", desc: "급격한 변화. 낡은 것이 무너져야 새로운 것을 세울 수 있습니다." },
-            { name: "Wheel of Fortune (수레바퀴)", symbol: "🎡", desc: "운명의 전환점. 변화의 흐름에 몸을 맡기세요." },
-            { name: "Death (죽음)", symbol: "💀", desc: "종결과 새로운 시작. 끝은 곧 새로운 출발입니다." },
-            { name: "The Hermit (은둔자)", symbol: "🕯️", desc: "성찰의 시간. 잠시 멈춰서 내면의 목소리를 들으세요." },
-            { name: "Justice (정의)", symbol: "⚖️", desc: "공정함과 균형. 올바른 판단이 필요한 시기입니다." }
+            { name: "The Hierophant (교황)", symbol: "📜", desc: "조언과 배움. 멘토를 찾거나 전통적인 방식을 따르세요." },
+            { name: "The Lovers (연인)", symbol: "💕", desc: "사랑과 조화. 중요한 선택의 기로에 서 있습니다." },
+            { name: "Chariot (전차)", symbol: "🛒", desc: "승리와 전진. 목표를 향해 거침없이 달려가세요." },
+            { name: "Strength (힘)", symbol: "🦁", desc: "외유내강. 부드러움이 강함을 이깁니다." },
+            { name: "The Hermit (은둔자)", symbol: "🕯️", desc: "성찰의 시간. 내면의 목소리에 귀 기울이세요." },
+            { name: "Wheel of Fortune (수레바퀴)", symbol: "🎡", desc: "운명의 변화. 기회의 순간이 다가오고 있습니다." },
+            { name: "Justice (정의)", symbol: "⚖️", desc: "공정함. 뿌린 대로 거두게 될 것입니다." },
+            { name: "The Hanged Man (매달린 사람)", symbol: "🙃", desc: "새로운 관점. 잠시 멈춰서 세상을 다르게 보세요." },
+            { name: "Death (죽음)", symbol: "💀", desc: "종결과 시작. 낡은 것이 가고 새로운 것이 옵니다." },
+            { name: "Temperance (절제)", symbol: "🥤", desc: "균형과 조화. 극단을 피하고 중용을 지키세요." },
+            { name: "The Devil (악마)", symbol: "😈", desc: "유혹과 속박. 나쁜 습관이나 집착을 끊어내세요." },
+            { name: "The Tower (탑)", symbol: "⚡", desc: "갑작스런 변화. 무너짐은 더 튼튼한 재건을 의미합니다." },
+            { name: "The Star (별)", symbol: "⭐", desc: "희망과 치유. 어두운 밤이 지나고 빛이 보입니다." },
+            { name: "The Moon (달)", symbol: "🌙", desc: "불안과 모호함. 감정에 휘둘리지 말고 직관을 믿으세요." },
+            { name: "The Sun (태양)", symbol: "☀️", desc: "긍정과 성공. 모든 것이 밝고 명확해집니다." },
+            { name: "Judgement (심판)", symbol: "🎺", desc: "부활과 보상. 지난 노력에 대한 결과가 나타납니다." },
+            { name: "The World (세계)", symbol: "🌍", desc: "완성과 통합. 하나의 챕터가 성공적으로 끝났습니다." }
         ];
 
-        let state = 'ready'; // ready(준비) -> revealed(공개됨)
+        let selectedCards = []; // 이번 게임에 뽑힌 카드 3장 데이터
+        let revealedCount = 0;  // 뒤집은 카드 개수
 
-        function handleButtonClick() {
-            if (state === 'ready') {
-                pickThreeCards();
-            } else {
-                resetCards();
+        // 페이지 로드 시 게임 준비
+        window.onload = function() {
+            setupGame();
+        };
+
+        function setupGame() {
+            // 1. 상태 초기화
+            revealedCount = 0;
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('mainStatus').innerText = "마음을 가다듬고, 궁금한 카드를 터치하세요.";
+            
+            // 2. 카드 덮기 (애니메이션)
+            for(let i=0; i<3; i++) {
+                document.getElementById(`card${i}`).classList.remove('flipped');
             }
-        }
 
-        function pickThreeCards() {
-            // 중복 없이 3장 뽑기
+            // 3. 랜덤 카드 3장 미리 배정 (보이지는 않음)
+            // 중복 없이 뽑기
             let indices = [];
             while(indices.length < 3){
                 let r = Math.floor(Math.random() * tarotDeck.length);
                 if(indices.indexOf(r) === -1) indices.push(r);
             }
 
-            const cardIds = ['card1', 'card2', 'card3'];
-            const dataIds = [['symbol1', 'name1', 'desc1'], ['symbol2', 'name2', 'desc2'], ['symbol3', 'name3', 'desc3']];
-
-            // 데이터 채우기 및 뒤집기 (순차적 애니메이션)
-            indices.forEach((index, i) => {
-                const cardData = tarotDeck[index];
-                
-                // 앞면 내용 채우기
-                document.getElementById(dataIds[i][0]).innerText = cardData.symbol;
-                document.getElementById(dataIds[i][1]).innerText = cardData.name;
-                document.getElementById(dataIds[i][2]).innerText = cardData.desc;
-
-                // 시차를 두고 뒤집기 (0.2초 간격)
-                setTimeout(() => {
-                    document.getElementById(cardIds[i]).classList.add('flipped');
-                }, i * 300);
-            });
-
-            // 버튼 텍스트 변경
-            document.getElementById('actionBtn').innerText = "다시 점치기";
-            state = 'revealed';
+            // 데이터 할당 (화면에는 아직 안 보임 - 뒷면 상태)
+            selectedCards = indices.map(idx => tarotDeck[idx]);
+            
+            // 앞면 HTML에 데이터 심어두기
+            for(let i=0; i<3; i++) {
+                document.getElementById(`symbol${i}`).innerText = selectedCards[i].symbol;
+                document.getElementById(`name${i}`).innerText = selectedCards[i].name;
+                document.getElementById(`desc${i}`).innerText = selectedCards[i].desc;
+            }
         }
 
-        function resetCards() {
-            const cardIds = ['card1', 'card2', 'card3'];
+        function revealCard(index) {
+            const cardElement = document.getElementById(`card${index}`);
             
-            // 카드 덮기
-            cardIds.forEach(id => {
-                document.getElementById(id).classList.remove('flipped');
-            });
+            // 이미 뒤집힌 카드면 무시
+            if(cardElement.classList.contains('flipped')) return;
 
-            // 버튼 텍스트 변경
-            setTimeout(() => {
-                document.getElementById('actionBtn').innerText = "운명의 카드 펼치기";
-                state = 'ready';
-            }, 600);
+            // 카드 뒤집기
+            cardElement.classList.add('flipped');
+            revealedCount++;
+
+            // 3장 다 뒤집었는지 확인
+            if(revealedCount === 3) {
+                setTimeout(() => {
+                    document.getElementById('resetBtn').style.display = 'inline-block';
+                    document.getElementById('mainStatus').innerText = "운명의 흐름이 모두 읽혔습니다.";
+                }, 800);
+            }
+        }
+
+        function resetGame() {
+            // 다시 덮고, 0.5초 뒤에 새로운 패 섞기
+            for(let i=0; i<3; i++) {
+                document.getElementById(`card${i}`).classList.remove('flipped');
+            }
+            setTimeout(setupGame, 500);
         }
     </script>
 </body>

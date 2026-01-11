@@ -1,1124 +1,264 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>대수선 허가/신고 판정기 (MVP)</title>
-  <style>
-    :root{
-      --bg:#f6f8fc;
-      --card:#ffffff;
-      --ink:#0f172a;
-      --muted:#475569;
-      --line:#e2e8f0;
-      --soft:#f1f5f9;
-      --accent:#2563eb;
-      --accent2:#06b6d4;
-      --good:#16a34a;
-      --warn:#f59e0b;
-      --bad:#dc2626;
-      --shadow: 0 12px 30px rgba(15,23,42,.08);
-      --radius: 18px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뚱뚜루의 신비한 타로점</title>
+    <style>
+        :root {
+            --primary-color: #6a1b9a;
+            --accent-color: #ffd700;
+            --text-color: #ffffff;
+            --bg-color: #121212;
+        }
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 10% 0%, #eef2ff 0%, transparent 55%),
-                  radial-gradient(900px 500px at 90% 10%, #ecfeff 0%, transparent 50%),
-                  var(--bg);
-      color:var(--ink);
-    }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
 
-    .wrap{
-      max-width: 1200px;
-      margin: 26px auto 56px;
-      padding: 0 16px;
-      display:grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap: 16px;
-    }
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
 
-    @media (max-width: 980px){
-      .wrap{grid-template-columns: 1fr; }
-    }
+        p.subtitle {
+            color: #ccc;
+            margin-bottom: 40px;
+        }
 
-    .topbar{
-      max-width: 1200px;
-      margin: 22px auto 0;
-      padding: 0 16px;
-    }
+        /* 카드 컨테이너 */
+        .card-container {
+            perspective: 1000px;
+            width: 200px;
+            height: 300px;
+            cursor: pointer;
+            position: relative;
+        }
 
-    .hero{
-      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.86));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px 16px 14px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 12px;
-    }
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(106, 27, 154, 0.5);
+        }
 
-    .hero h1{
-      font-size: 18px;
-      margin: 0 0 4px;
-      letter-spacing: -0.2px;
-    }
-    .hero p{
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .chips{
-      display:flex;
-      gap: 8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      margin-top: 2px;
-    }
-    .chip{
-      font-size: 12px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border:1px solid var(--line);
-      background: #ffffff;
-      color: var(--muted);
-      white-space:nowrap;
-      display:flex;
-      align-items:center;
-      gap: 6px;
-    }
-    .dot{width:8px;height:8px;border-radius:99px;display:inline-block}
-    .dot.a{background: var(--accent2)}
-    .dot.b{background: var(--accent)}
-    .dot.c{background: #0ea5e9}
+        /* 카드가 뒤집혔을 때 */
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
 
-    .card{
-      background: var(--card);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .cardHead{
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #ffffff, #fbfdff);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .cardHead h2{
-      font-size: 14px;
-      margin:0;
-      letter-spacing:-0.1px;
-    }
-    .cardHead .sub{
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--accent-color);
+        }
 
-    .content{ padding: 16px; }
+        /* 카드 뒷면 (보라색 패턴) */
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #4a148c,
+                #4a148c 10px,
+                #38006b 10px,
+                #38006b 20px
+            );
+            color: var(--accent-color);
+            font-size: 3rem;
+        }
 
-    .steps{
-      display:flex;
-      gap: 10px;
-      flex-wrap:wrap;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--line);
-      background: #f8fbff;
-    }
-    .stepPill{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      padding: 8px 10px;
-      border:1px solid var(--line);
-      border-radius: 999px;
-      background:#ffffff;
-      font-size: 13px;
-      color: var(--muted);
-      user-select:none;
-    }
-    .stepPill.active{
-      border-color: rgba(37,99,235,.35);
-      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
-      color: var(--ink);
-    }
-    .stepNum{
-      width: 22px; height: 22px;
-      border-radius: 99px;
-      display:grid; place-items:center;
-      background: #e8f0ff;
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 12px;
-    }
-    .navBtns{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-    }
-    button{
-      border: 1px solid var(--line);
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-weight: 700;
-      cursor: pointer;
-      color: var(--ink);
-    }
-    button.primary{
-      background: var(--accent);
-      border-color: rgba(37,99,235,.4);
-      color:#fff;
-    }
-    button:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-    }
+        /* 카드 앞면 (결과) */
+        .card-front {
+            background-color: #2a2a2a;
+            transform: rotateY(180deg);
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-    .grid2{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 740px){
-      .grid2{grid-template-columns:1fr}
-    }
+        .card-symbol {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
 
-    .field{
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      background: linear-gradient(180deg, #ffffff, #fbfdff);
-    }
-    .field.blue{
-      border-color: rgba(37,99,235,.25);
-    }
-    .field.blue:focus-within{
-      border-color: rgba(37,99,235,.60);
-      box-shadow: 0 0 0 5px rgba(37,99,235,.12);
-    }
-    label{
-      display:block;
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-    .hint{
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 8px;
-      line-height: 1.45;
-    }
-    input, select{
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 10px;
-      font-size: 14px;
-      background:#fff;
-      color: var(--ink);
-      outline:none;
-    }
-    input:focus, select:focus{
-      border-color: rgba(6,182,212,.65);
-      box-shadow: 0 0 0 4px rgba(6,182,212,.12);
-    }
+        .card-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
 
-    .notice{
-      padding: 12px;
-      border-radius: 14px;
-      background: #fff7ed;
-      border: 1px solid rgba(245,158,11,.35);
-      color: #7c2d12;
-      font-size: 13px;
-      line-height: 1.45;
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-    }
-    .notice .badge{
-      flex: 0 0 auto;
-      width: 22px; height: 22px;
-      border-radius: 99px;
-      display:grid; place-items:center;
-      background: rgba(245,158,11,.15);
-      border: 1px solid rgba(245,158,11,.25);
-      font-weight: 900;
-    }
+        .card-desc {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #ddd;
+        }
 
-    .resultBanner{
-      border-radius: 16px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      background: #ffffff;
-    }
-    .resultBanner h3{
-      margin: 0 0 6px;
-      font-size: 15px;
-      letter-spacing:-0.1px;
-    }
-    .resultBanner p{
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
+        /* 버튼 및 안내 메시지 */
+        .action-area {
+            margin-top: 40px;
+            height: 50px;
+        }
 
-    .status{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 10px;
-      border:1px solid var(--line);
-      background:#fff;
-    }
-    .status.good{color: #0b5d2a; border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.08)}
-    .status.warn{color: #7a4b00; border-color: rgba(245,158,11,.40); background: rgba(245,158,11,.10)}
-    .status.neutral{color: #0f172a; border-color: rgba(2,132,199,.25); background: rgba(2,132,199,.07)}
-    .status.bad{color: #7f1d1d; border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.08)}
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: none; /* 처음엔 숨김 */
+        }
 
-    .list{
-      margin: 10px 0 0;
-      padding-left: 18px;
-      color: var(--ink);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .list li{ margin: 6px 0; }
-    .muted{ color: var(--muted); }
+        .btn:hover {
+            background-color: #8e24aa;
+        }
 
-    .divider{height:1px;background: var(--line); margin: 14px 0;}
+        .instruction {
+            font-size: 1.1rem;
+            animation: blink 2s infinite;
+        }
 
-    .miniCard{
-      border:1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      background: #ffffff;
-    }
-    .miniTitle{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 900;
-      margin-bottom: 8px;
-    }
-    .kv{
-      display:flex;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 8px 0;
-      border-bottom: 1px dashed rgba(148,163,184,.5);
-      font-size: 13px;
-    }
-    .kv:last-child{border-bottom:none}
-    .kv b{font-weight:900}
-    .rightSticky{
-      position: sticky;
-      top: 16px;
-      align-self: start;
-    }
-    @media (max-width: 980px){
-      .rightSticky{position: static;}
-    }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
-    details{
-      border:1px solid var(--line);
-      border-radius: 14px;
-      background:#fff;
-      overflow:hidden;
-    }
-    summary{
-      cursor:pointer;
-      padding: 12px 14px;
-      font-weight: 900;
-      font-size: 13px;
-      color: var(--ink);
-      list-style:none;
-      user-select:none;
-      background: #f8fafc;
-      border-bottom:1px solid var(--line);
-    }
-    details[open] summary{border-bottom:1px solid var(--line)}
-    .detailsBody{padding: 12px 14px; font-size: 13px; color: var(--muted); line-height:1.5}
-
-    .copyArea{
-      width: 100%;
-      height: 170px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px;
-      font-size: 12px;
-      background: #0b1220;
-      color: #e5e7eb;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      resize: vertical;
-    }
-    .copyRow{display:flex; gap:10px; align-items:center; margin-top: 10px}
-    .copyRow button{flex:0 0 auto}
-
-    .tag{
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--muted);
-    }
-    .tag.ok{border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.06); color:#0b5d2a}
-    .tag.no{border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.06); color:#7f1d1d}
-  </style>
+        footer {
+            margin-top: 50px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
 </head>
-
 <body>
-  <div class="topbar">
-    <div class="hero">
-      <div>
-        <h1>대수선 허가/신고 판정기 (MVP)</h1>
-        <p>
-          사용자는 “공사 사실”만 체크합니다. 도구가 <b>대수선 해당 여부</b>와 <b>허가 vs 신고</b>를 자동 판정하고,
-          <b>신고 가능 범위(시행령 제11조② 체크)</b>에서 어디서 벗어났는지도 보여줍니다.
-        </p>
-      </div>
-      <div class="chips">
-        <span class="chip"><span class="dot a"></span>대수선 범위: 시행령 기준(간이)</span>
-        <span class="chip"><span class="dot b"></span>신고 가능 범위: 시행령 제11조②(간이)</span>
-        <span class="chip"><span class="dot c"></span>MVP: 대수선 중심</span>
-      </div>
-    </div>
-  </div>
 
-  <div class="wrap">
-    <!-- LEFT -->
-    <div class="card">
-      <div class="cardHead">
-        <div>
-          <h2>의사결정 진행상황</h2>
-          <div class="sub">“허가/신고”를 묻지 않습니다. 공사 사실 입력 → 자동 판정</div>
+    <h1>🔮 뚱뚜루의 타로 하우스</h1>
+    <p class="subtitle">마음을 가다듬고 카드를 클릭해보세요.</p>
+
+    <div class="card-container" onclick="pickCard()">
+        <div class="card" id="tarotCard">
+            <div class="card-face card-back">
+                ✨
+            </div>
+            <div class="card-face card-front">
+                <div class="card-symbol" id="cardSymbol">?</div>
+                <div class="card-name" id="cardName">...</div>
+                <div class="card-desc" id="cardDesc">...</div>
+            </div>
         </div>
-        <div class="navBtns">
-          <button id="btnPrev">이전</button>
-          <button id="btnNext" class="primary">다음</button>
-        </div>
-      </div>
-
-      <div class="steps">
-        <div class="stepPill active" data-step="1"><span class="stepNum">1</span>기본 정보</div>
-        <div class="stepPill" data-step="2"><span class="stepNum">2</span>대수선/신고 요건</div>
-        <div class="stepPill" data-step="3"><span class="stepNum">3</span>자동 판정 결과</div>
-      </div>
-
-      <div class="content">
-        <!-- STEP 1 -->
-        <section class="step" id="step1">
-          <div class="grid2">
-            <div class="field blue">
-              <label for="useType">용도(건축법 시행령 [별표 1] 기반, 간이 선택)</label>
-              <select id="useType"></select>
-              <div class="hint">
-                지금 MVP는 <b>대수선 허가/신고</b> 흐름을 먼저 고정합니다.<br/>
-                용도는 추후 “용도별 추가 규정/예외”를 붙일 때 키로 쓰기 위해 먼저 받습니다.
-              </div>
-            </div>
-
-            <div class="field blue">
-              <label for="structDemo">공사 과정에서 “주요구조부 해체(철거)”가 있나요?</label>
-              <select id="structDemo">
-                <option value="no">아니요 (해체 없음)</option>
-                <option value="yes">예 (해체 있음)</option>
-                <option value="unknown">모르겠음</option>
-              </select>
-              <div class="hint">
-                <b>신고 가능 범위(시행령 제11조②)</b>는 보통 “해체 없음”을 강하게 요구합니다.<br/>
-                모르겠음이면 결과는 보수적으로 <b>허가 검토</b> 쪽으로 기웁니다.
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:12px" class="notice">
-            <div class="badge">!</div>
-            <div>
-              <b>입력 방식 안내</b><br/>
-              1) “수선(보수·교체)”은 그대로 고치는 느낌, 2) “변경/증설/해체”는 구조·배치·수량이 달라지는 느낌으로 입력하세요.<br/>
-              이 페이지는 <span class="muted">지자체/조례/사례에 따라 달라질 수 있는 부분</span>이 있어, 최종은 관할과 교차 확인이 필요합니다.
-            </div>
-          </div>
-        </section>
-
-        <!-- STEP 2 -->
-        <section class="step" id="step2" style="display:none">
-          <div class="miniCard" style="margin-bottom:12px">
-            <div class="miniTitle">대수선 트리거 입력</div>
-            <div class="muted" style="font-size:13px; line-height:1.5">
-              아래 항목 중 기준을 넘으면 <b>“대수선 후보”</b>가 됩니다. (MVP 간이 기준)<br/>
-              그리고 <b>“신고 가능 범위(시행령 제11조②)”</b>는 다음을 우선 체크합니다:
-              <ul class="list">
-                <li><b>주요구조부 해체 없음</b></li>
-                <li><b>공사 형태가 수선(보수·교체)</b> 위주 (변경/증설/해체면 신고에서 탈락)</li>
-                <li><b>신고에 포함되는 항목만</b>으로 구성 (MVP 기준: 내력벽/기둥/보/지붕틀 중심)</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="grid2">
-            <div class="field blue">
-              <label>내력벽 (기준 예시: 30㎡ 이상이면 대수선 트리거)</label>
-              <select id="bwType">
-                <option value="none">해당 없음</option>
-                <option value="repair">수선(보수·교체)</option>
-                <option value="change">변경(배치/구조 변경)</option>
-                <option value="add">증설(추가 설치)</option>
-                <option value="remove">해체(철거/삭제)</option>
-              </select>
-              <div style="height:8px"></div>
-              <input id="bwAmt" type="number" min="0" step="0.1" placeholder="해당 면적 합계(㎡) 예: 60" />
-              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
-            </div>
-
-            <div class="field blue">
-              <label>기둥 (기준 예시: 3개 이상이면 대수선 트리거)</label>
-              <select id="colType">
-                <option value="none">해당 없음</option>
-                <option value="repair">수선(보수·교체)</option>
-                <option value="change">변경(배치/구조 변경)</option>
-                <option value="add">증설(추가 설치)</option>
-                <option value="remove">해체(철거/삭제)</option>
-              </select>
-              <div style="height:8px"></div>
-              <input id="colAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 10" />
-              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
-            </div>
-
-            <div class="field blue">
-              <label>보 (기준 예시: 3개 이상이면 대수선 트리거)</label>
-              <select id="beamType">
-                <option value="none">해당 없음</option>
-                <option value="repair">수선(보수·교체)</option>
-                <option value="change">변경(배치/구조 변경)</option>
-                <option value="add">증설(추가 설치)</option>
-                <option value="remove">해체(철거/삭제)</option>
-              </select>
-              <div style="height:8px"></div>
-              <input id="beamAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 20" />
-              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
-            </div>
-
-            <div class="field blue">
-              <label>지붕틀 (기준 예시: 3개 이상이면 대수선 트리거)</label>
-              <select id="roofType">
-                <option value="none">해당 없음</option>
-                <option value="repair">수선(보수·교체)</option>
-                <option value="change">변경(배치/구조 변경)</option>
-                <option value="add">증설(추가 설치)</option>
-                <option value="remove">해체(철거/삭제)</option>
-              </select>
-              <div style="height:8px"></div>
-              <input id="roofAmt" type="number" min="0" step="1" placeholder="해당 개수(개) 예: 3" />
-              <div class="hint">신고 후보: <b>수선</b> + (해체 없음) 조건에서만 유리</div>
-            </div>
-
-            <div class="field blue">
-              <label>외벽 마감재 (기준 예시: 30㎡ 이상이면 대수선 트리거 “후보”로만 표시)</label>
-              <select id="extType">
-                <option value="none">해당 없음</option>
-                <option value="repair">수선(보수·교체)</option>
-                <option value="change">변경(배치/구조 변경)</option>
-                <option value="add">증설(추가 설치)</option>
-                <option value="remove">해체(철거/삭제)</option>
-              </select>
-              <div style="height:8px"></div>
-              <input id="extAmt" type="number" min="0" step="0.1" placeholder="해당 면적 합계(㎡) 예: 300" />
-              <div class="hint">
-                MVP에서는 <b>‘신고 가능 범위’에서 제외</b>로 처리합니다.
-                (외벽 마감재는 지자체/사례에 따라 해석 분기 가능)
-              </div>
-            </div>
-
-            <div class="field">
-              <label>메모(선택)</label>
-              <input id="memo" type="text" placeholder="예: 내부 철거 포함, 외벽은 동일 재료로 교체 등" />
-              <div class="hint">결과 요약 복사에 같이 포함됩니다.</div>
-            </div>
-          </div>
-
-          <details style="margin-top:12px">
-            <summary>🔧 이 MVP의 “신고 가능 범위(시행령 제11조②)”를 어떻게 판정하나요?</summary>
-            <div class="detailsBody">
-              이 페이지는 “사용자가 법조문을 읽고 선택”하지 않게 하려고, 아래처럼 <b>간이 판정 규칙</b>을 씁니다.<br/><br/>
-              <b>신고 가능</b>으로 판정하려면:
-              <ul class="list">
-                <li>대수선 트리거가 1개 이상 발생(= 대수선 후보)</li>
-                <li>주요구조부 해체 = <b>없음</b></li>
-                <li>트리거가 된 항목들의 공사 형태가 모두 <b>수선(보수·교체)</b></li>
-                <li>트리거가 된 항목이 <b>신고 허용 목록</b>(MVP: 내력벽/기둥/보/지붕틀) 안에 있을 것</li>
-              </ul>
-              위 조건 중 하나라도 깨지면 <b>“대수선 허가 검토 필요”</b>로 내려갑니다.
-              (보수적으로 운영해서 ‘신고인데 허가로 봐야 하는’ 리스크를 줄이는 방향)
-            </div>
-          </details>
-        </section>
-
-        <!-- STEP 3 -->
-        <section class="step" id="step3" style="display:none">
-          <div class="resultBanner" id="resultBanner">
-            <div class="status neutral" id="statusPill">판정 대기</div>
-            <h3 id="resultTitle">입력을 바탕으로 결과가 표시됩니다.</h3>
-            <p id="resultDesc" class="muted">좌측 입력을 바꾸면 결과가 즉시 갱신됩니다.</p>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="miniCard">
-            <div class="miniTitle">대수선 트리거(발생 항목)</div>
-            <div id="triggerList" class="muted">아직 트리거가 없습니다.</div>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div class="miniCard">
-            <div class="miniTitle">신고 가능 범위 체크(시행령 제11조②, 간이)</div>
-            <div id="reportCheck" class="muted">입력 후 자동으로 표시됩니다.</div>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div class="miniCard">
-            <div class="miniTitle">복사 가능한 요약</div>
-            <textarea class="copyArea" id="copyBox" readonly></textarea>
-            <div class="copyRow">
-              <button class="primary" id="btnCopy">요약 복사</button>
-              <span class="muted" id="copyMsg"></span>
-            </div>
-          </div>
-        </section>
-      </div>
     </div>
 
-    <!-- RIGHT -->
-    <div class="rightSticky">
-      <div class="card">
-        <div class="cardHead">
-          <div>
-            <h2>현재 입력 요약</h2>
-            <div class="sub">“내가 뭘 체크했지?” 바로 보이게</div>
-          </div>
-          <span class="tag" id="quickTag">대기</span>
-        </div>
-        <div class="content">
-          <div class="miniCard">
-            <div class="miniTitle">기본</div>
-            <div class="kv"><span>용도</span><b id="sumUse">-</b></div>
-            <div class="kv"><span>주요구조부 해체</span><b id="sumDemo">-</b></div>
-            <div class="kv"><span>대수선 트리거 개수</span><b id="sumTrig">0</b></div>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div class="miniCard">
-            <div class="miniTitle">체크된 공사 항목</div>
-            <div id="sumItems" class="muted">아직 입력이 없습니다.</div>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <details>
-            <summary>📌 MVP 로드맵(다음 확장)</summary>
-            <div class="detailsBody">
-              1) “별표1 용도”에 따라 <b>예외/추가 기준</b> 붙이기<br/>
-              2) “증축/개축/용도변경”까지 흐름 확장<br/>
-              3) 조례/지구단위/방화지구 등 <b>추가 분기</b> 모듈화<br/>
-              4) 결과에 “필요 서류 체크리스트” 출력
-            </div>
-          </details>
-
-          <div style="height:12px"></div>
-
-          <div class="muted" style="font-size:12px; line-height:1.5">
-            ※ 이 도구는 <b>설명용 MVP</b>입니다. 최종 판단은 관할청 해석, 도면, 구조 검토, 사례에 따라 달라질 수 있습니다.
-          </div>
-        </div>
-      </div>
+    <div class="action-area">
+        <p class="instruction" id="instruction">카드를 터치하세요</p>
+        <button class="btn" id="resetBtn" onclick="resetCard()">다시 뽑기</button>
     </div>
-  </div>
 
-<script>
-  // ---------------------------
-  // 1) 용도 옵션(별표1: 1~29 + 23의2 포함)
-  //    ✅ “1번 단독주택 …” 대신 “1-가. 단독주택” 형식으로 정리
-  // ---------------------------
-  const USE_OPTIONS = [
-    { group: "1. 단독주택", items: [
-      ["house_1ga", "1-가. 단독주택"],
-      ["house_1na", "1-나. 다중주택"],
-      ["house_1da", "1-다. 다가구주택"],
-      ["house_1ra", "1-라. 공관"]
-    ]},
-    { group: "2. 공동주택", items: [
-      ["apt_2ga", "2-가. 아파트"],
-      ["row_2na", "2-나. 연립주택"],
-      ["multiUnit_2da", "2-다. 다세대주택"],
-      ["dorm_2ra", "2-라. 기숙사"]
-    ]},
-    { group: "3. 제1종 근린생활시설", items: [
-      ["nhood1_3", "3. 제1종 근린생활시설"]
-    ]},
-    { group: "4. 제2종 근린생활시설", items: [
-      ["nhood2_4", "4. 제2종 근린생활시설"]
-    ]},
-    { group: "5. 문화 및 집회시설", items: [
-      ["culture_5", "5. 문화 및 집회시설"]
-    ]},
-    { group: "6. 종교시설", items: [
-      ["religion_6", "6. 종교시설"]
-    ]},
-    { group: "7. 판매시설", items: [
-      ["sales_7", "7. 판매시설"]
-    ]},
-    { group: "8. 운수시설", items: [
-      ["transport_8", "8. 운수시설"]
-    ]},
-    { group: "9. 의료시설", items: [
-      ["medical_9", "9. 의료시설"]
-    ]},
-    { group: "10. 교육연구시설", items: [
-      ["edu_10", "10. 교육연구시설"]
-    ]},
-    { group: "11. 노유자시설", items: [
-      ["care_11", "11. 노유자시설"]
-    ]},
-    { group: "12. 수련시설", items: [
-      ["training_12", "12. 수련시설"]
-    ]},
-    { group: "13. 운동시설", items: [
-      ["sports_13", "13. 운동시설"]
-    ]},
-    { group: "14. 업무시설", items: [
-      ["office_14", "14. 업무시설"]
-    ]},
-    { group: "15. 숙박시설", items: [
-      ["lodging_15", "15. 숙박시설"]
-    ]},
-    { group: "16. 위락시설", items: [
-      ["amusement_16", "16. 위락시설"]
-    ]},
-    { group: "17. 공장", items: [
-      ["factory_17", "17. 공장"]
-    ]},
-    { group: "18. 창고시설", items: [
-      ["warehouse_18", "18. 창고시설"]
-    ]},
-    { group: "19. 위험물 저장 및 처리 시설", items: [
-      ["hazard_19", "19. 위험물 저장 및 처리 시설"]
-    ]},
-    { group: "20. 자동차 관련 시설", items: [
-      ["auto_20", "20. 자동차 관련 시설"]
-    ]},
-    { group: "21. 동물 및 식물 관련 시설", items: [
-      ["animalPlant_21", "21. 동물 및 식물 관련 시설"]
-    ]},
-    { group: "22. 자원순환 관련 시설", items: [
-      ["resource_22", "22. 자원순환 관련 시설"]
-    ]},
-    { group: "23. 교정시설", items: [
-      ["correction_23", "23. 교정시설"]
-    ]},
-    { group: "23의2. 국방·군사시설", items: [
-      ["defense_23_2", "23의2. 국방·군사시설"]
-    ]},
-    { group: "24. 방송통신시설", items: [
-      ["broadcast_24", "24. 방송통신시설"]
-    ]},
-    { group: "25. 발전시설", items: [
-      ["power_25", "25. 발전시설"]
-    ]},
-    { group: "26. 묘지 관련 시설", items: [
-      ["cemetery_26", "26. 묘지 관련 시설"]
-    ]},
-    { group: "27. 관광 휴게시설", items: [
-      ["tourismRest_27", "27. 관광 휴게시설"]
-    ]},
-    { group: "28. 장례시설", items: [
-      ["funeral_28", "28. 장례시설"]
-    ]},
-    { group: "29. 야영장 시설", items: [
-      ["camping_29", "29. 야영장 시설"]
-    ]},
-    { group: "기타", items: [
-      ["etc", "기타/미상"]
-    ]}
-  ];
+    <footer>
+        © 2026 Architect Ddungdduru. All rights reserved.
+    </footer>
 
-  // ---------------------------
-  // 2) 대수선 트리거(간이 규칙) + 신고 허용 목록(간이)
-  // ---------------------------
-  const RULES = [
-    { id:"bw",   name:"내력벽",    unit:"㎡", threshold:30, typeEl:"bwType",   amtEl:"bwAmt",   reportAllowed:true  },
-    { id:"col",  name:"기둥",      unit:"개", threshold:3,  typeEl:"colType",  amtEl:"colAmt",  reportAllowed:true  },
-    { id:"beam", name:"보",        unit:"개", threshold:3,  typeEl:"beamType", amtEl:"beamAmt", reportAllowed:true  },
-    { id:"roof", name:"지붕틀",    unit:"개", threshold:3,  typeEl:"roofType", amtEl:"roofAmt", reportAllowed:true  },
-    { id:"ext",  name:"외벽 마감재", unit:"㎡", threshold:30, typeEl:"extType",  amtEl:"extAmt",  reportAllowed:false }
-  ];
+    <script>
+        // 타로 카드 데이터 (간단하게 5장만 예시로 넣음, 더 추가 가능)
+        const tarotDeck = [
+            { 
+                name: "The Fool (바보)", 
+                symbol: "🤡", 
+                desc: "새로운 시작, 모험, 순수함. 두려워하지 말고 첫 발을 내디뎌보세요. 무한한 가능성이 열려있습니다." 
+            },
+            { 
+                name: "The Magician (마법사)", 
+                symbol: "🧙‍♂️", 
+                desc: "창조력, 기술, 의지. 당신은 이미 필요한 모든 도구를 가지고 있습니다. 능력을 발휘할 때입니다." 
+            },
+            { 
+                name: "The Empress (여황제)", 
+                symbol: "👑", 
+                desc: "풍요, 모성, 자연. 당신의 노력들이 결실을 맺을 것입니다. 편안한 마음으로 흐름을 즐기세요." 
+            },
+            { 
+                name: "The Sun (태양)", 
+                symbol: "☀️", 
+                desc: "성공, 긍정, 활력. 모든 것이 명확해지고 밝은 미래가 기다리고 있습니다. 자신감을 가지세요!" 
+            },
+            { 
+                name: "The Star (별)", 
+                symbol: "⭐", 
+                desc: "희망, 영감, 평온. 힘든 시기가 지나고 치유의 시간이 왔습니다. 꿈을 잃지 마세요." 
+            },
+            { 
+                name: "The Tower (탑)", 
+                symbol: "⚡", 
+                desc: "갑작스런 변화, 깨달음. 기존의 틀이 깨지는 것은 아프지만, 더 튼튼한 기반을 다질 기회입니다." 
+            },
+            { 
+                name: "Wheel of Fortune (운명의 수레바퀴)", 
+                symbol: "🎡", 
+                desc: "변화, 운명, 기회. 삶의 흐름이 바뀌고 있습니다. 다가오는 변화를 기회로 삼으세요." 
+            }
+        ];
 
-  const TYPE_LABEL = {
-    none: "해당 없음",
-    repair: "수선(보수·교체)",
-    change: "변경(배치/구조 변경)",
-    add: "증설(추가 설치)",
-    remove: "해체(철거/삭제)"
-  };
+        let isFlipped = false;
 
-  let step = 1;
+        function pickCard() {
+            if (isFlipped) return; // 이미 뒤집혀있으면 클릭 방지
 
-  const els = {
-    useType: document.getElementById("useType"),
-    structDemo: document.getElementById("structDemo"),
-    memo: document.getElementById("memo"),
+            // 랜덤으로 카드 한 장 뽑기
+            const randomIndex = Math.floor(Math.random() * tarotDeck.length);
+            const pickedCard = tarotDeck[randomIndex];
 
-    bwType: document.getElementById("bwType"),
-    bwAmt: document.getElementById("bwAmt"),
-    colType: document.getElementById("colType"),
-    colAmt: document.getElementById("colAmt"),
-    beamType: document.getElementById("beamType"),
-    beamAmt: document.getElementById("beamAmt"),
-    roofType: document.getElementById("roofType"),
-    roofAmt: document.getElementById("roofAmt"),
-    extType: document.getElementById("extType"),
-    extAmt: document.getElementById("extAmt"),
+            // 데이터 화면에 넣기
+            document.getElementById('cardSymbol').innerText = pickedCard.symbol;
+            document.getElementById('cardName').innerText = pickedCard.name;
+            document.getElementById('cardDesc').innerText = pickedCard.desc;
 
-    btnPrev: document.getElementById("btnPrev"),
-    btnNext: document.getElementById("btnNext"),
-    stepPills: Array.from(document.querySelectorAll(".stepPill")),
-    steps: [
-      document.getElementById("step1"),
-      document.getElementById("step2"),
-      document.getElementById("step3")
-    ],
+            // 카드 뒤집기 애니메이션
+            document.getElementById('tarotCard').classList.add('flipped');
+            
+            // 안내 문구 숨기고 다시하기 버튼 보이기
+            document.getElementById('instruction').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('resetBtn').style.display = 'inline-block';
+            }, 800);
 
-    statusPill: document.getElementById("statusPill"),
-    resultTitle: document.getElementById("resultTitle"),
-    resultDesc: document.getElementById("resultDesc"),
-    triggerList: document.getElementById("triggerList"),
-    reportCheck: document.getElementById("reportCheck"),
-    copyBox: document.getElementById("copyBox"),
-    btnCopy: document.getElementById("btnCopy"),
-    copyMsg: document.getElementById("copyMsg"),
+            isFlipped = true;
+        }
 
-    quickTag: document.getElementById("quickTag"),
-    sumUse: document.getElementById("sumUse"),
-    sumDemo: document.getElementById("sumDemo"),
-    sumTrig: document.getElementById("sumTrig"),
-    sumItems: document.getElementById("sumItems")
-  };
-
-  function numVal(el){
-    const v = parseFloat((el.value || "").toString().trim());
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  function buildUseOptions(){
-    els.useType.innerHTML = "";
-    USE_OPTIONS.forEach(g=>{
-      const og = document.createElement("optgroup");
-      og.label = g.group;
-      g.items.forEach(([val, label])=>{
-        const o = document.createElement("option");
-        o.value = val; o.textContent = label;
-        og.appendChild(o);
-      });
-      els.useType.appendChild(og);
-    });
-    // 기본값: 다세대주택(2-다)로
-    els.useType.value = "multiUnit_2da";
-  }
-
-  function compute(){
-    const useLabel = els.useType.options[els.useType.selectedIndex]?.textContent || "-";
-    const demo = els.structDemo.value;
-
-    const triggers = [];
-    const selectedItems = [];
-
-    RULES.forEach(r=>{
-      const t = document.getElementById(r.typeEl).value;
-      const a = numVal(document.getElementById(r.amtEl));
-
-      if(t !== "none" || a > 0){
-        selectedItems.push({
-          id:r.id, name:r.name, type:t, amt:a, unit:r.unit, threshold:r.threshold, reportAllowed:r.reportAllowed
-        });
-      }
-
-      if(t !== "none" && a >= r.threshold){
-        triggers.push({
-          id:r.id, name:r.name, type:t, amt:a, unit:r.unit, threshold:r.threshold, reportAllowed:r.reportAllowed
-        });
-      }
-    });
-
-    const isMajor = triggers.length > 0;
-
-    let reportOk = false;
-    let reportReasons = [];
-    let reportChecks = [];
-
-    if(!isMajor){
-      reportOk = false;
-      reportReasons.push("대수선 트리거가 없어 ‘대수선’으로 보기 어렵습니다.");
-    } else {
-      if(demo !== "no"){
-        reportReasons.push("주요구조부 해체가 있거나(또는 불명) 신고 요건(해체 없음)에 맞지 않습니다.");
-      }
-
-      const nonRepair = triggers.filter(x => x.type !== "repair");
-      if(nonRepair.length){
-        reportReasons.push("트리거 항목 중 ‘수선’이 아닌 공사(변경/증설/해체)가 포함되어 신고 범위를 벗어날 수 있습니다.");
-      }
-
-      const notAllowed = triggers.filter(x => !x.reportAllowed);
-      if(notAllowed.length){
-        reportReasons.push("트리거 항목 중 일부가 신고 허용 목록(MVP 기준) 밖입니다.");
-      }
-
-      reportOk = (demo === "no" && nonRepair.length === 0 && notAllowed.length === 0);
-    }
-
-    if(isMajor){
-      reportChecks = triggers.map(tr => {
-        const ok1 = (demo === "no");
-        const ok2 = (tr.type === "repair");
-        const ok3 = tr.reportAllowed;
-
-        const ok = ok1 && ok2 && ok3;
-        const why = [];
-        if(!ok1) why.push("해체 없음 요건 불충족");
-        if(!ok2) why.push("수선이 아님");
-        if(!ok3) why.push("신고 허용 목록 밖(MVP)");
-        return { ok, name: tr.name, type: tr.type, amt: tr.amt, unit: tr.unit, why };
-      });
-    }
-
-    let decision = "WAIT";
-    let title = "입력을 바탕으로 결과가 표시됩니다.";
-    let desc = "좌측 입력을 바꾸면 결과가 즉시 갱신됩니다.";
-
-    if(!isMajor){
-      decision = "NOT_MAJOR";
-      title = "판정: 대수선 아님(또는 경미 수선 범주일 가능성)";
-      desc = "현재 입력 기준에서는 대수선 트리거가 없습니다. 다만 별도의 허가/신고(용도변경·증축 등)는 다른 로직이 필요합니다.";
-    } else if(reportOk){
-      decision = "REPORT_OK";
-      title = "판정: 대수선 ‘신고’ 가능 후보입니다.";
-      desc = "대수선 트리거는 발생했지만, (해체 없음) + (수선 중심) + (신고 허용 항목) 조건을 만족합니다. 관할청 해석과 서류 요건을 함께 확인하세요.";
-    } else {
-      decision = "PERMIT";
-      title = "판정: 대수선 ‘허가’ 검토가 필요합니다. (신고 요건을 벗어남)";
-      desc = "대수선 트리거는 발생했고, 신고 가능 범위(시행령 제11조②, 간이)의 조건을 충족하지 못한 사유가 있습니다.";
-    }
-
-    return { useLabel, demo, triggers, selectedItems, isMajor, reportOk, reportReasons, reportChecks, decision, title, desc };
-  }
-
-  function setStatus(decision){
-    els.statusPill.className = "status neutral";
-    els.quickTag.className = "tag";
-
-    if(decision === "REPORT_OK"){
-      els.statusPill.className = "status good";
-      els.statusPill.textContent = "대수선 신고 가능 후보";
-      els.quickTag.className = "tag ok";
-      els.quickTag.textContent = "신고 후보";
-    } else if(decision === "PERMIT"){
-      els.statusPill.className = "status warn";
-      els.statusPill.textContent = "대수선 허가 검토";
-      els.quickTag.className = "tag no";
-      els.quickTag.textContent = "허가 검토";
-    } else if(decision === "NOT_MAJOR"){
-      els.statusPill.className = "status neutral";
-      els.statusPill.textContent = "대수선 아님";
-      els.quickTag.className = "tag";
-      els.quickTag.textContent = "대수선 아님";
-    } else {
-      els.statusPill.className = "status neutral";
-      els.statusPill.textContent = "판정 대기";
-      els.quickTag.className = "tag";
-      els.quickTag.textContent = "대기";
-    }
-  }
-
-  function render(){
-    const r = compute();
-
-    setStatus(r.decision);
-    els.resultTitle.textContent = r.title;
-    els.resultDesc.textContent = r.desc;
-
-    if(r.triggers.length === 0){
-      els.triggerList.textContent = "아직 트리거가 없습니다.";
-    } else {
-      const ul = document.createElement("ul");
-      ul.className = "list";
-      r.triggers.forEach(t=>{
-        const li = document.createElement("li");
-        li.innerHTML = `<b>${t.name}</b> · ${TYPE_LABEL[t.type]} · ${t.amt}${t.unit} (기준 ${t.threshold}${t.unit})`;
-        ul.appendChild(li);
-      });
-      els.triggerList.innerHTML = "";
-      els.triggerList.appendChild(ul);
-    }
-
-    if(!r.isMajor){
-      els.reportCheck.innerHTML = `<span class="muted">대수선 트리거가 없으므로 신고/허가 판정 단계로 진입하지 않습니다.</span>`;
-    } else {
-      const parts = [];
-      if(r.reportChecks.length){
-        parts.push(`<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
-          <span class="tag ${r.demo === "no" ? "ok":"no"}">${r.demo === "no" ? "해체 없음":"해체 있음/불명"}</span>
-          <span class="tag ${r.reportOk ? "ok":"no"}">${r.reportOk ? "신고 요건(간이) 충족":"신고 요건(간이) 미충족"}</span>
-        </div>`);
-        parts.push(`<ul class="list">`);
-        r.reportChecks.forEach(c=>{
-          if(c.ok){
-            parts.push(`<li>✅ <b>${c.name}</b> · ${TYPE_LABEL[c.type]} · ${c.amt}${c.unit} <span class="muted">(신고 후보)</span></li>`);
-          } else {
-            parts.push(`<li>❌ <b>${c.name}</b> · ${TYPE_LABEL[c.type]} · ${c.amt}${c.unit}
-              <div class="muted" style="margin-top:4px; font-size:12px">이유: ${c.why.join(", ")}</div>
-            </li>`);
-          }
-        });
-        parts.push(`</ul>`);
-      }
-
-      if(!r.reportOk){
-        const ul2 = document.createElement("ul");
-        ul2.className = "list";
-        r.reportReasons.forEach(x=>{
-          const li = document.createElement("li");
-          li.textContent = x;
-          ul2.appendChild(li);
-        });
-        const wrap = document.createElement("div");
-        wrap.innerHTML = `<div class="miniTitle" style="margin-bottom:6px">신고 불가(또는 불리) 사유</div>`;
-        wrap.appendChild(ul2);
-        els.reportCheck.innerHTML = parts.join("");
-        els.reportCheck.appendChild(wrap);
-      } else {
-        els.reportCheck.innerHTML = parts.join("") + `<div class="muted" style="margin-top:8px">※ 관할청 해석/서류요건은 별도 확인이 필요합니다.</div>`;
-      }
-    }
-
-    els.sumUse.textContent = r.useLabel;
-    els.sumDemo.textContent = (r.demo === "no") ? "해체 없음" : (r.demo === "yes") ? "해체 있음" : "모르겠음";
-    els.sumTrig.textContent = String(r.triggers.length);
-
-    if(r.selectedItems.length === 0){
-      els.sumItems.textContent = "아직 입력이 없습니다.";
-    } else {
-      const ul = document.createElement("ul");
-      ul.className = "list";
-      r.selectedItems.forEach(s=>{
-        const amtText = (s.amt > 0) ? ` · ${s.amt}${s.unit}` : "";
-        const li = document.createElement("li");
-        li.innerHTML = `<b>${s.name}</b> · ${TYPE_LABEL[s.type]}${amtText}`;
-        ul.appendChild(li);
-      });
-      els.sumItems.innerHTML = "";
-      els.sumItems.appendChild(ul);
-    }
-
-    const lines = [];
-    lines.push("[대수선 허가/신고 판정 요약]");
-    lines.push(`- 용도: ${r.useLabel}`);
-    lines.push(`- 주요구조부 해체: ${els.sumDemo.textContent}`);
-    lines.push(`- 대수선 트리거 개수: ${r.triggers.length}`);
-    lines.push(`- 결과: ${els.statusPill.textContent} / ${r.title}`);
-    lines.push("");
-    if(r.triggers.length){
-      lines.push("[대수선 트리거(발생)]");
-      r.triggers.forEach(t=>{
-        lines.push(`- ${t.name}: ${TYPE_LABEL[t.type]} / ${t.amt}${t.unit} (기준 ${t.threshold}${t.unit})`);
-      });
-      lines.push("");
-    }
-    if(r.isMajor){
-      lines.push("[신고 가능 범위 체크(간이)]");
-      if(r.reportOk){
-        lines.push("- 신고 요건(간이) 충족: 해체 없음 + 수선 중심 + 신고 허용 항목");
-      } else {
-        r.reportReasons.forEach(x=> lines.push(`- ${x}`));
-      }
-      lines.push("");
-    }
-    const memo = (els.memo.value || "").trim();
-    if(memo){
-      lines.push(`[메모] ${memo}`);
-      lines.push("");
-    }
-    lines.push("[주의]");
-    lines.push("- 본 결과는 설명용 MVP(간이 로직)입니다. 지자체/조례/사례/구조검토에 따라 달라질 수 있습니다.");
-
-    els.copyBox.value = lines.join("\n");
-  }
-
-  function showStep(n){
-    step = n;
-    els.steps.forEach((s,i)=> s.style.display = (i === (n-1)) ? "block" : "none");
-    els.stepPills.forEach(p=>{
-      p.classList.toggle("active", Number(p.dataset.step) === n);
-    });
-    els.btnPrev.disabled = (n === 1);
-    els.btnNext.textContent = (n === 3) ? "완료" : "다음";
-    render();
-  }
-
-  els.btnPrev.addEventListener("click", ()=> showStep(Math.max(1, step-1)));
-  els.btnNext.addEventListener("click", ()=>{
-    if(step < 3) showStep(step+1);
-    else showStep(3);
-  });
-
-  els.stepPills.forEach(p=>{
-    p.addEventListener("click", ()=> showStep(Number(p.dataset.step)));
-  });
-
-  const watch = [
-    els.useType, els.structDemo, els.memo,
-    els.bwType, els.bwAmt,
-    els.colType, els.colAmt,
-    els.beamType, els.beamAmt,
-    els.roofType, els.roofAmt,
-    els.extType, els.extAmt
-  ];
-  watch.forEach(x=> x.addEventListener("input", render));
-  watch.forEach(x=> x.addEventListener("change", render));
-
-  els.btnCopy.addEventListener("click", async ()=>{
-    try{
-      await navigator.clipboard.writeText(els.copyBox.value);
-      els.copyMsg.textContent = "복사 완료!";
-      setTimeout(()=> els.copyMsg.textContent = "", 1500);
-    }catch(e){
-      els.copyMsg.textContent = "복사 실패(브라우저 권한 확인)";
-      setTimeout(()=> els.copyMsg.textContent = "", 2000);
-    }
-  });
-
-  buildUseOptions();
-  showStep(1);
-</script>
+        function resetCard() {
+            // 카드 다시 뒷면으로
+            document.getElementById('tarotCard').classList.remove('flipped');
+            
+            // 버튼 숨기고 안내 문구 보이기
+            document.getElementById('resetBtn').style.display = 'none';
+            
+            setTimeout(() => {
+                document.getElementById('instruction').style.display = 'block';
+                isFlipped = false;
+            }, 600);
+        }
+    </script>
 </body>
 </html>

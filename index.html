@@ -19,6 +19,8 @@
             background-image: radial-gradient(#1e293b 1px, transparent 1px);
             background-size: 30px 30px;
         }
+        /* 스크롤 부드럽게 */
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -28,7 +30,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex-shrink-0 flex items-center gap-2">
                     <i class="fa-solid fa-cube text-blue-600 text-2xl"></i>
-                    <span class="font-bold text-xl tracking-tight text-gray-900">여기건축</span>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">(주)여기건축사사무소</span>
                 </div>
                 <div class="hidden md:flex space-x-8">
                     <a href="#features" class="text-gray-600 hover:text-blue-600 font-medium">주요기능</a>
@@ -55,23 +57,23 @@
             </h1>
             <p class="mt-4 text-xl text-gray-400 max-w-2xl mx-auto mb-10">
                 도면 업로드부터 견적 산출, 에너지 분석, 그리고 준공 후 유지관리까지.<br>
-                '여기건축'은 건물 생애주기의 모든 데이터를 연결합니다.
+                '(주)여기건축사사무소'는 건물 생애주기의 모든 데이터를 연결합니다.
             </p>
             <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <button class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg shadow-xl shadow-blue-500/20 transition transform hover:-translate-y-1">
-                    내 건물 3D로 미리보기
+                <button onclick="location.href='viewer.html'" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg shadow-xl shadow-blue-500/20 transition transform hover:-translate-y-1 flex items-center gap-2 justify-center">
+                    <i class="fa-solid fa-play"></i> 내 건물 3D로 미리보기
                 </button>
-                <button class="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 rounded-lg font-bold text-lg transition">
+                <button onclick="alert('준비 중인 문서입니다.')" class="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 rounded-lg font-bold text-lg transition">
                     솔루션 소개서 다운로드
                 </button>
             </div>
             
             <div class="mt-16 relative mx-auto max-w-5xl">
                 <div class="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 p-2 overflow-hidden">
-                    <div class="bg-gray-800 rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
+                    <div class="bg-gray-800 rounded-lg aspect-video flex items-center justify-center relative overflow-hidden group">
                         <div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-black opacity-50"></div>
                         <div class="text-center z-10">
-                            <i class="fa-solid fa-building text-6xl text-gray-600 mb-4 animate-bounce"></i>
+                            <i class="fa-solid fa-building text-6xl text-gray-600 mb-4 group-hover:text-blue-500 transition duration-500"></i>
                             <p class="text-gray-400">AI Architecture Analysis System</p>
                             <p class="text-blue-500 font-mono text-sm mt-2">Loading ECO2 Logic... 100%</p>
                             <p class="text-emerald-500 font-mono text-sm">Generating 3D Model... Done.</p>
@@ -194,7 +196,7 @@
                 <div class="col-span-1 md:col-span-2">
                     <div class="flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-cube text-blue-600 text-xl"></i>
-                        <span class="font-bold text-white text-lg">여기건축</span>
+                        <span class="font-bold text-white text-lg">(주)여기건축사사무소</span>
                     </div>
                     <p class="text-sm mb-6 max-w-sm">
                         대한민국 No.1 전공정 건축 통합 플랫폼.<br>
@@ -226,4 +228,3 @@
 
 </body>
 </html>
-

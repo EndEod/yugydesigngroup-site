@@ -3,325 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>뚱뚜루의 타로 하우스 (Interactive)</title>
+    <title>여기건축 | 건축의 모든 공정, 하나의 플랫폼에서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #6a1b9a;
-            --accent-color: #ffd700;
-            --text-color: #ffffff;
-            --bg-color: #121212;
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { font-family: 'Pretendard', sans-serif; }
+        .gradient-text {
+            background: linear-gradient(to right, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        h1 {
-            color: var(--accent-color);
-            margin-bottom: 5px;
-            font-size: 2rem;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-
-        p.subtitle {
-            color: #ccc;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        /* 3장 카드를 감싸는 영역 */
-        .spread-area {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .card-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .position-label {
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #aaa;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .card-container {
-            perspective: 1000px;
-            width: 180px;
-            height: 280px;
-            cursor: pointer; /* 손가락 모양 커서 */
-            position: relative;
-        }
-
-        /* 마우스 올렸을 때 살짝 떠오르는 효과 */
-        .card-container:hover .card:not(.flipped) {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(106, 27, 154, 0.6);
-        }
-
-        .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.6s; /* 뒤집는 속도 */
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(106, 27, 154, 0.3);
-        }
-
-        .card.flipped {
-            transform: rotateY(180deg);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid var(--accent-color);
-        }
-
-        /* 뒷면 디자인 */
-        .card-back {
-            background: repeating-linear-gradient(
-                45deg,
-                #30004a,
-                #30004a 10px,
-                #1a0029 10px,
-                #1a0029 20px
-            );
-            color: var(--accent-color);
-            font-size: 2.5rem;
-        }
-        
-        /* 뒷면에 '터치' 유도 문구 */
-        .click-hint {
-            font-size: 0.8rem;
-            margin-top: 10px;
-            opacity: 0.7;
-            font-weight: normal;
-        }
-
-        /* 앞면 디자인 */
-        .card-front {
-            background-color: #2a2a2a;
-            transform: rotateY(180deg);
-            padding: 15px;
-            box-sizing: border-box;
-            border: 2px solid var(--accent-color);
-        }
-
-        .card-symbol { font-size: 3rem; margin-bottom: 10px; }
-        .card-name { font-size: 1rem; font-weight: bold; color: var(--accent-color); margin-bottom: 8px; word-break: keep-all; }
-        .card-desc { font-size: 0.8rem; line-height: 1.4; color: #ddd; word-break: keep-all; }
-
-        .action-area {
-            margin-top: 40px;
-            height: 60px;
-        }
-
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: background 0.3s;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            display: none; /* 처음엔 숨김 */
-        }
-
-        .btn:hover { background-color: #8e24aa; }
-
-        footer { margin-top: 50px; font-size: 0.8rem; color: #555; }
-
-        @media (max-width: 600px) {
-            .spread-area { flex-direction: column; align-items: center; }
-            .card-container { width: 200px; height: 300px; }
+        .hero-bg {
+            background-color: #0f172a;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 30px 30px;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800">
 
-    <h1>🔮 뚱뚜루의 타로 하우스</h1>
-    <p class="subtitle" id="mainStatus">카드를 하나씩 클릭해서 운명을 확인하세요.</p>
+    <nav class="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center gap-2">
+                    <i class="fa-solid fa-cube text-blue-600 text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">여기건축</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 font-medium">주요기능</a>
+                    <a href="#solution" class="text-gray-600 hover:text-blue-600 font-medium">솔루션</a>
+                    <a href="#care" class="text-gray-600 hover:text-blue-600 font-medium">프리미엄 케어</a>
+                </div>
+                <div>
+                    <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full font-bold transition shadow-lg shadow-blue-500/30 text-sm">
+                        베타 서비스 신청
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-    <div class="spread-area">
-        <div class="card-wrapper">
-            <div class="position-label">Past (과거)</div>
-            <div class="card-container" onclick="revealCard(0)">
-                <div class="card" id="card0">
-                    <div class="card-face card-back">
-                        ✨<div class="click-hint">Click</div>
-                    </div>
-                    <div class="card-face card-front">
-                        <div class="card-symbol" id="symbol0"></div>
-                        <div class="card-name" id="name0"></div>
-                        <div class="card-desc" id="desc0"></div>
+    <section class="hero-bg pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <span class="inline-block py-1 px-3 rounded-full bg-blue-900/50 border border-blue-700 text-blue-300 text-sm font-semibold mb-6">
+                🚀 국내 최초 전공정 통합 플랫폼
+            </span>
+            <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6">
+                복잡한 건축, <br>
+                <span class="gradient-text">클릭 한 번으로 투명하게.</span>
+            </h1>
+            <p class="mt-4 text-xl text-gray-400 max-w-2xl mx-auto mb-10">
+                도면 업로드부터 견적 산출, 에너지 분석, 그리고 준공 후 유지관리까지.<br>
+                '여기건축'은 건물 생애주기의 모든 데이터를 연결합니다.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <button class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg shadow-xl shadow-blue-500/20 transition transform hover:-translate-y-1">
+                    내 건물 3D로 미리보기
+                </button>
+                <button class="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 rounded-lg font-bold text-lg transition">
+                    솔루션 소개서 다운로드
+                </button>
+            </div>
+            
+            <div class="mt-16 relative mx-auto max-w-5xl">
+                <div class="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 p-2 overflow-hidden">
+                    <div class="bg-gray-800 rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-black opacity-50"></div>
+                        <div class="text-center z-10">
+                            <i class="fa-solid fa-building text-6xl text-gray-600 mb-4 animate-bounce"></i>
+                            <p class="text-gray-400">AI Architecture Analysis System</p>
+                            <p class="text-blue-500 font-mono text-sm mt-2">Loading ECO2 Logic... 100%</p>
+                            <p class="text-emerald-500 font-mono text-sm">Generating 3D Model... Done.</p>
+                        </div>
+                        <div class="absolute top-4 left-4 w-48 h-32 bg-gray-700/50 rounded backdrop-blur border border-gray-600 p-3">
+                            <div class="h-2 w-12 bg-blue-500 rounded mb-2"></div>
+                            <div class="h-2 w-24 bg-gray-500 rounded mb-4"></div>
+                            <div class="h-16 w-full bg-gray-600/50 rounded"></div>
+                        </div>
+                        <div class="absolute bottom-4 right-4 w-64 h-12 bg-blue-600 rounded flex items-center justify-center text-white font-bold shadow-lg">
+                            예상 공사비 절감액: 12,500,000원
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <div class="card-wrapper">
-            <div class="position-label">Present (현재)</div>
-            <div class="card-container" onclick="revealCard(1)">
-                <div class="card" id="card1">
-                    <div class="card-face card-back">
-                        ✨<div class="click-hint">Click</div>
+    <section id="features" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">불가능을 기술로 넘다</h2>
+                <p class="text-lg text-gray-600">기존 건축 시장의 비효율을 압도적인 기술력으로 해결했습니다.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="group p-8 rounded-2xl bg-gray-50 hover:bg-blue-50 transition border border-gray-100 hover:border-blue-200">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-cube"></i>
                     </div>
-                    <div class="card-face card-front">
-                        <div class="card-symbol" id="symbol1"></div>
-                        <div class="card-name" id="name1"></div>
-                        <div class="card-desc" id="desc1"></div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">2D 도면의 3D 자동화</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        복잡한 CAD 도면, 전문가가 아니면 보기 힘드셨죠? 업로드 즉시 AI가 3D 모델로 변환하여 누구나 쉽게 공간을 이해할 수 있습니다.
+                    </p>
+                </div>
+                <div class="group p-8 rounded-2xl bg-gray-50 hover:bg-emerald-50 transition border border-gray-100 hover:border-emerald-200">
+                    <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">에너지 성능 원클릭 분석</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        ECO2 연동 및 RPA 기술을 통해 건물의 에너지 등급을 사전에 시뮬레이션하고, 최적의 단열재와 설비를 추천해 드립니다.
+                    </p>
+                </div>
+                <div class="group p-8 rounded-2xl bg-gray-50 hover:bg-purple-50 transition border border-gray-100 hover:border-purple-200">
+                    <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">실시간 견적 & 공정 관리</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        깜깜이 공사비는 이제 그만. 실시간 자재 단가 DB와 연동하여 투명한 견적을 산출하고, 현장 상황을 앱으로 모니터링합니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="care" class="py-24 bg-gray-900 text-white overflow-hidden relative">
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-emerald-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <div class="lg:w-1/2">
+                    <span class="text-emerald-400 font-bold tracking-wider uppercase text-sm mb-2 block">Premium Building Care</span>
+                    <h2 class="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+                        건물 관리,<br>
+                        <span class="text-blue-400">구독</span>으로 해결하세요.
+                    </h2>
+                    <p class="text-gray-400 text-lg mb-8 leading-relaxed">
+                        준공 후 발생하는 누수, 크랙, 설비 고장... 터지고 나면 늦습니다. 
+                        자동차 엔진오일 갈듯, 건물의 생애주기를 데이터 기반으로 관리해드립니다.
+                    </p>
+                    <ul class="space-y-4 mb-10">
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-check-circle text-blue-500"></i>
+                            <span>교체 주기 사전 알림 서비스 (Push Notification)</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-check-circle text-blue-500"></i>
+                            <span>검증된 전문 보수 업체 원스톱 매칭</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-check-circle text-blue-500"></i>
+                            <span>에너지 소비 리포트 & 절감 가이드 제공</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="inline-block bg-white text-gray-900 hover:bg-gray-100 px-8 py-4 rounded-lg font-bold transition">
+                        구독 서비스 자세히 보기
+                    </a>
+                </div>
+                <div class="lg:w-1/2">
+                    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-2xl relative">
+                        <div class="bg-gray-700/50 rounded-xl p-4 mb-4 flex items-start gap-4 animate-pulse">
+                            <div class="bg-red-500/20 text-red-400 p-2 rounded-lg">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">옥상 방수층 점검 요망</h4>
+                                <p class="text-gray-400 text-xs mt-1">예상 수명이 3개월 남았습니다. 지금 보수하면 약 500만원 절감 가능합니다.</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700/50 rounded-xl p-4 flex items-start gap-4">
+                            <div class="bg-blue-500/20 text-blue-400 p-2 rounded-lg">
+                                <i class="fa-solid fa-wrench"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">HVAC 필터 교체 주기</h4>
+                                <p class="text-gray-400 text-xs mt-1">정기 구독 회원 혜택으로 10% 할인가에 교체하세요.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <div class="card-wrapper">
-            <div class="position-label">Future (미래)</div>
-            <div class="card-container" onclick="revealCard(2)">
-                <div class="card" id="card2">
-                    <div class="card-face card-back">
-                        ✨<div class="click-hint">Click</div>
+    <footer class="bg-gray-950 text-gray-400 py-12 border-t border-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fa-solid fa-cube text-blue-600 text-xl"></i>
+                        <span class="font-bold text-white text-lg">여기건축</span>
                     </div>
-                    <div class="card-face card-front">
-                        <div class="card-symbol" id="symbol2"></div>
-                        <div class="card-name" id="name2"></div>
-                        <div class="card-desc" id="desc2"></div>
-                    </div>
+                    <p class="text-sm mb-6 max-w-sm">
+                        대한민국 No.1 전공정 건축 통합 플랫폼.<br>
+                        기술로 건축의 장벽을 낮추고, 데이터로 건물의 가치를 높입니다.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Service</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">건축주용 앱</a></li>
+                        <li><a href="#" class="hover:text-white">전문가용 솔루션</a></li>
+                        <li><a href="#" class="hover:text-white">건물 관리 구독</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li>제휴 문의: partner@yeogi-arch.com</li>
+                        <li>고객 센터: 1544-XXXX</li>
+                        <li>서울시 강남구 테헤란로...</li>
+                    </ul>
                 </div>
             </div>
+            <div class="border-t border-gray-900 mt-12 pt-8 text-center text-xs">
+                &copy; 2026 Yeogi Architecture Lab. All rights reserved.
+            </div>
         </div>
-    </div>
-
-    <div class="action-area">
-        <button class="btn" id="resetBtn" onclick="resetGame()">다시 섞기</button>
-    </div>
-
-    <footer>
-        © 2026 Architect Ddungdduru. All rights reserved.
     </footer>
 
-    <script>
-        const tarotDeck = [
-            { name: "The Fool (바보)", symbol: "🤡", desc: "순수한 시작. 계획 없는 모험이 예상치 못한 즐거움을 줍니다." },
-            { name: "The Magician (마법사)", symbol: "🧙‍♂️", desc: "창조력 발휘. 당신은 이미 필요한 능력을 가지고 있습니다." },
-            { name: "The Empress (여황제)", symbol: "👑", desc: "풍요와 결실. 편안한 마음으로 흐름을 즐기세요." },
-            { name: "The Emperor (황제)", symbol: "🤴", desc: "안정과 권위. 흔들리지 않는 기반을 다질 때입니다." },
-            { name: "The Hierophant (교황)", symbol: "📜", desc: "조언과 배움. 멘토를 찾거나 전통적인 방식을 따르세요." },
-            { name: "The Lovers (연인)", symbol: "💕", desc: "사랑과 조화. 중요한 선택의 기로에 서 있습니다." },
-            { name: "Chariot (전차)", symbol: "🛒", desc: "승리와 전진. 목표를 향해 거침없이 달려가세요." },
-            { name: "Strength (힘)", symbol: "🦁", desc: "외유내강. 부드러움이 강함을 이깁니다." },
-            { name: "The Hermit (은둔자)", symbol: "🕯️", desc: "성찰의 시간. 내면의 목소리에 귀 기울이세요." },
-            { name: "Wheel of Fortune (수레바퀴)", symbol: "🎡", desc: "운명의 변화. 기회의 순간이 다가오고 있습니다." },
-            { name: "Justice (정의)", symbol: "⚖️", desc: "공정함. 뿌린 대로 거두게 될 것입니다." },
-            { name: "The Hanged Man (매달린 사람)", symbol: "🙃", desc: "새로운 관점. 잠시 멈춰서 세상을 다르게 보세요." },
-            { name: "Death (죽음)", symbol: "💀", desc: "종결과 시작. 낡은 것이 가고 새로운 것이 옵니다." },
-            { name: "Temperance (절제)", symbol: "🥤", desc: "균형과 조화. 극단을 피하고 중용을 지키세요." },
-            { name: "The Devil (악마)", symbol: "😈", desc: "유혹과 속박. 나쁜 습관이나 집착을 끊어내세요." },
-            { name: "The Tower (탑)", symbol: "⚡", desc: "갑작스런 변화. 무너짐은 더 튼튼한 재건을 의미합니다." },
-            { name: "The Star (별)", symbol: "⭐", desc: "희망과 치유. 어두운 밤이 지나고 빛이 보입니다." },
-            { name: "The Moon (달)", symbol: "🌙", desc: "불안과 모호함. 감정에 휘둘리지 말고 직관을 믿으세요." },
-            { name: "The Sun (태양)", symbol: "☀️", desc: "긍정과 성공. 모든 것이 밝고 명확해집니다." },
-            { name: "Judgement (심판)", symbol: "🎺", desc: "부활과 보상. 지난 노력에 대한 결과가 나타납니다." },
-            { name: "The World (세계)", symbol: "🌍", desc: "완성과 통합. 하나의 챕터가 성공적으로 끝났습니다." }
-        ];
-
-        let selectedCards = []; // 이번 게임에 뽑힌 카드 3장 데이터
-        let revealedCount = 0;  // 뒤집은 카드 개수
-
-        // 페이지 로드 시 게임 준비
-        window.onload = function() {
-            setupGame();
-        };
-
-        function setupGame() {
-            // 1. 상태 초기화
-            revealedCount = 0;
-            document.getElementById('resetBtn').style.display = 'none';
-            document.getElementById('mainStatus').innerText = "마음을 가다듬고, 궁금한 카드를 터치하세요.";
-            
-            // 2. 카드 덮기 (애니메이션)
-            for(let i=0; i<3; i++) {
-                document.getElementById(`card${i}`).classList.remove('flipped');
-            }
-
-            // 3. 랜덤 카드 3장 미리 배정 (보이지는 않음)
-            // 중복 없이 뽑기
-            let indices = [];
-            while(indices.length < 3){
-                let r = Math.floor(Math.random() * tarotDeck.length);
-                if(indices.indexOf(r) === -1) indices.push(r);
-            }
-
-            // 데이터 할당 (화면에는 아직 안 보임 - 뒷면 상태)
-            selectedCards = indices.map(idx => tarotDeck[idx]);
-            
-            // 앞면 HTML에 데이터 심어두기
-            for(let i=0; i<3; i++) {
-                document.getElementById(`symbol${i}`).innerText = selectedCards[i].symbol;
-                document.getElementById(`name${i}`).innerText = selectedCards[i].name;
-                document.getElementById(`desc${i}`).innerText = selectedCards[i].desc;
-            }
-        }
-
-        function revealCard(index) {
-            const cardElement = document.getElementById(`card${index}`);
-            
-            // 이미 뒤집힌 카드면 무시
-            if(cardElement.classList.contains('flipped')) return;
-
-            // 카드 뒤집기
-            cardElement.classList.add('flipped');
-            revealedCount++;
-
-            // 3장 다 뒤집었는지 확인
-            if(revealedCount === 3) {
-                setTimeout(() => {
-                    document.getElementById('resetBtn').style.display = 'inline-block';
-                    document.getElementById('mainStatus').innerText = "운명의 흐름이 모두 읽혔습니다.";
-                }, 800);
-            }
-        }
-
-        function resetGame() {
-            // 다시 덮고, 0.5초 뒤에 새로운 패 섞기
-            for(let i=0; i<3; i++) {
-                document.getElementById(`card${i}`).classList.remove('flipped');
-            }
-            setTimeout(setupGame, 500);
-        }
-    </script>
 </body>
 </html>
